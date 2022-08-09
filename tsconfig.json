@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist/",
+        "sourceMap": true,
+        "module": "commonjs",
+        "target": "ES2015",
+        "strict": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictBindCallApply": true,
+        "strictPropertyInitialization": true,
+        "noImplicitAny": true,
+        "alwaysStrict": true,
+        "esModuleInterop": true
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
