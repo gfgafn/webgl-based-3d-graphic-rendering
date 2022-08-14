@@ -1,12 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>webgl-based-3d-graphic-rendering</title>
+        <style>
+            .container {
+                position: relative;
+            }
 
-<head>
-    <meta charset="utf-8" />
-    <title>webgl-based-3d-graphic-rendering</title>
-</head>
+            #overlay {
+                position: absolute;
+                /* 相对左上角 */
+                left: 0px;
+                top: 0px;
+                background-color: rgba(0, 0, 0, 0.7);
+                color: white;
+                font-family: monospace;
+                padding: 1em;
+            }
+        </style>
+    </head>
 
-<body>
-</body>
+    <body>
+        <label>demo select<select id="select"></select></label>
 
+        <div class="container">
+            <canvas id="webgl" width="800" height="600" style="background: lightgray">
+            </canvas>
+            <div id="overlay">
+                <div>FPS: <span id="fps"></span></div>
+                <div>Tris: <span id="tris"></span></div>
+                <div>Verts: <span id="verts"></span></div>
+            </div>
+        </div>
+    </body>
 </html>
