@@ -76,23 +76,15 @@ class Doom3Token implements IDoom3Token {
     }
 
     isString(str: string): boolean {
-        const count: number = this._charArr.length;
-
         // 字符串长度不相等，肯定不等
-        if (str.length !== count) {
+        if (str.length !== this._charArr.length) {
             return false;
         }
 
         // 遍历每个字符
-        for (let i: number = 0; i < count; i++) {
-            // _charArr数组类型中每个char和输入的string类型中的每个char进行严格比较（!==操作符而不是!=）
-            // 只要任意一个char不相等，意味着字符串不相等
-            if (this._charArr[i] !== str[i]) {
-                return false;
-            }
-        }
-
-        return true;
+        // _charArr数组类型中每个char和输入的string类型中的每个char进行严格比较（!==操作符而不是!=）
+        // 只要任意一个char不相等，意味着字符串不相等
+        return this._charArr.every((char, index) => char === str[index]);
     }
 
     //下面三个非接口方法被IDoom3Tokenizer接口的实现类Doom3Tokenizer所使用
@@ -119,42 +111,32 @@ class Doom3Tokenizer implements IDoom3Tokenizer {
 
     private _digits: string[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
-    //判断某个字符是不是数字
+    /** 判断某个字符是不是数字 */
     private _isDigit(c: string): boolean {
-        for (let i: number = 0; i < this._digits.length; i++) {
-            if (c === this._digits[i]) {
-                return true;
-            }
-        }
-        return false;
+        return this._digits.some((dig) => c === dig);
     }
 
+    /** 判断某个字符是不是空白字符 */
     private _isWhitespace(c: string): boolean {
-        for (let i: number = 0; i < this._whiteSpaces.length; i++) {
-            if (c === this._whiteSpaces[i]) {
-                return true;
-            }
-        }
-
-        return false;
+        return this._whiteSpaces.some((whiteSpace) => c === whiteSpace);
     }
 
-    //要解析的字符串，使用Doom3Tokenizer字符串来初始化变量
+    // 要解析的字符串，使用Doom3Tokenizer字符串来初始化变量
     private _source: string = 'Doom3Tokenizer';
     private _currIdx: number = 0;
 
-    //创建IToken接口
+    // 创建IToken接口
     createToken(): IDoom3Token {
         return new Doom3Token();
     }
 
-    //实现公开的接口方法，设置要解析的字符串，并且重置当前索引
+    // 实现公开的接口方法，设置要解析的字符串，并且重置当前索引
     setSource(source: string): void {
         this._source = source;
         this._currIdx = 0;
     }
 
-    //实现公开的接口方法，不改变要解析的字符串，仅重置当前索引
+    // 实现公开的接口方法，不改变要解析的字符串，仅重置当前索引
     reset(): void {
         this._currIdx = 0;
     }
@@ -172,7 +154,7 @@ class Doom3Tokenizer implements IDoom3Tokenizer {
         return this._current;
     }
 
-    //跳过所有的空白字符，将当前索引指向非空白字符
+    // 跳过所有的空白字符，将当前索引指向非空白字符
     private _skipWhitespace(): string {
         let c: string = '';
         do {
@@ -184,7 +166,7 @@ class Doom3Tokenizer implements IDoom3Tokenizer {
         return c;
     }
 
-    //修改为私有方法
+    // 修改为私有方法
     getNextToken(tok: IDoom3Token): boolean {
         //这里将IDoom3Token类型使用as操作符向下转型为Doom3Token
         /*之所以要向下转型是因为_getNumber 等方法的输出参数类型是Doom3Token而不是IDoom3Token

@@ -1,12 +1,12 @@
 import { Application } from './common/Application';
+import { AsyncLoadTestApplication } from './demo/AsyncLoadTestApplication';
+import { BasicWebGLApplication } from './demo/BasicWebGLApplication';
+import { CoordSystemApplication } from './demo/CoordSystemApplication';
+import { Doom3Application } from './demo/Doom3Application';
+import { MD5SkinedMeshApplication } from './demo/MD5SkinedMeshApplication';
 import { MeshBuilderApplication } from './demo/MeshBuilderApplication';
 import { Q3BspApplication } from './demo/Q3BspApplication';
-import { Doom3Application } from './demo/Doom3Application';
 import { RotatingCubeApplication } from './demo/RotatingCubeApplication';
-import { CoordSystemApplication } from './demo/CoordSystemApplication';
-import { BasicWebGLApplication } from './demo/BasicWebGLApplication';
-import { MD5SkinedMeshApplication } from './demo/MD5SkinedMeshApplication';
-import { AsyncLoadTestApplication } from './demo/AsyncLoadTestApplication';
 
 // 获得HTMLSelectElement对象，用来切换要运行的Application
 const select: HTMLSelectElement = document.getElementById('select') as HTMLSelectElement;
@@ -16,7 +16,7 @@ const canvas: HTMLCanvasElement | null = document.getElementById(
     'webgl',
 ) as HTMLCanvasElement;
 
-const appNames: string[] = [
+const demoSelectOptions: string[] = [
     '第3章: RotatingCubeApplication',
     '第3章: AsyncLoadTestApplication',
     '第4章: BasicWebGLApplication',
@@ -27,16 +27,20 @@ const appNames: string[] = [
     '第10章: MD5SkinedMeshApplication',
 ];
 
-function addItem(select: HTMLSelectElement, value: string): void {
-    select.options.add(new Option(value, value));
-}
+const demoApplications = [
+    RotatingCubeApplication,
+    AsyncLoadTestApplication,
+    BasicWebGLApplication,
+    MeshBuilderApplication,
+    CoordSystemApplication,
+    Q3BspApplication,
+    Doom3Application,
+    MD5SkinedMeshApplication,
+];
 
-function addItemes(select: HTMLSelectElement): void {
-    if (canvas === null) return;
-
-    for (let i: number = 0; i < appNames.length; i++) {
-        addItem(select, appNames[i]);
-    }
+function addOptionsToSelectElement(select: HTMLSelectElement): void {
+    if (!canvas) return;
+    demoSelectOptions.forEach((option) => select.options.add(new Option(option, option)));
 }
 
 enum EAPPName {
@@ -106,49 +110,13 @@ function frameCallback(app: Application): void {
     verts.nodeValue = '0';
 }
 
-// /*
-select.onchange = (): void => {
-    // 获取用于获得webgl上下文对象的HTMLCanvasElement元素
-    const canvas: HTMLCanvasElement | null = document.getElementById(
-        'webgl',
-    ) as HTMLCanvasElement;
+addOptionsToSelectElement(select);
 
-    if (select.selectedIndex === 0) {
-        const app: RotatingCubeApplication = new RotatingCubeApplication(canvas);
-        app.frameCallback = frameCallback;
-        app.run();
-    } else if (select.selectedIndex === 1) {
-        const app: AsyncLoadTestApplication = new AsyncLoadTestApplication(canvas);
-        app.run();
-    } else if (select.selectedIndex === 2) {
-        const app: Application = new BasicWebGLApplication(canvas);
-        app.frameCallback = frameCallback;
-        app.run();
-    } else if (select.selectedIndex === 3) {
-        const app: Application = new MeshBuilderApplication(canvas);
-        app.frameCallback = frameCallback;
-        app.start();
-    } else if (select.selectedIndex === 4) {
-        const app: CoordSystemApplication = new CoordSystemApplication(canvas);
-        app.frameCallback = frameCallback;
-        app.run();
-    } else if (select.selectedIndex === 5) {
-        const app: Application = new Q3BspApplication(canvas);
-        app.frameCallback = frameCallback;
-        app.run();
-    } else if (select.selectedIndex === 6) {
-        const app: Doom3Application = new Doom3Application(canvas);
-        app.frameCallback = frameCallback;
-        app.run();
-    } else if (select.selectedIndex === 7) {
-        const app: MD5SkinedMeshApplication = new MD5SkinedMeshApplication(canvas);
-        app.frameCallback = frameCallback;
-        app.run();
-    }
+select.onchange = () => {
+    const app: Application = new demoApplications[select.selectedIndex](canvas);
+    app.frameCallback = frameCallback;
+    app.run();
 };
-// */
-
-// addItemes(select);
 
 runApplication(EAPPName.ROTATINGCUBE);
 // runApplication(EAPPName.ASYNCLOAD);

@@ -1,5 +1,5 @@
-import { HttpRequest } from '../common/utils/HttpRequest';
 import { Application } from '../common/Application';
+import { HttpRequest } from '../common/utils/HttpRequest';
 
 export class AsyncLoadTestApplication extends Application {
     // 需要从服务器加载的图像url列表

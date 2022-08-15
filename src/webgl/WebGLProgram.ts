@@ -3,7 +3,7 @@ import { GLAttribBits, GLAttribState } from './WebGLAttribState';
 import { EShaderType, GLAttribMap, GLHelper, GLUniformMap } from './WebGLHelper';
 import { GLShaderSource } from './WebGLShaderSource';
 
-/** `GLProgram` 类用来编译、链接 `GLSL ES` 源码，并提供了载入uniform变量的相关操作 */
+/** `GLProgram` 类用来用来GLSL ES源码的编译、链接、绑定及 `uniform` 变量载入等操作 */
 export class GLProgram {
     // uniforms相关定义
     //vs常用的uniform命名
@@ -56,13 +56,17 @@ export class GLProgram {
         shader = GLHelper.createShader(this.gl, EShaderType.FS_SHADER);
         if (!shader) throw new Error('Create Fragment Shader Object Fail! ! ! ');
 
-        this.fsShader = shader; // 创建WebGLProgram链接器对象
+        this.fsShader = shader;
+        // 创建WebGLProgram链接器对象
         const program: WebGLProgram | null = GLHelper.createProgram(this.gl);
         if (!program) throw new Error('Create WebGLProgram Object Fail! ! ! ');
 
-        this.program = program; // 初始化map对象
+        this.program = program;
+        // 初始化map对象
         this.attribMap = {};
-        this.uniformMap = {}; // 如果构造函数参数包含GLSL ES源码，就调用loadShaders方法      // 否则需要在调用构造函数后手动调用loadShaders方法
+        this.uniformMap = {};
+        // 如果构造函数参数包含GLSL ES源码，就调用loadShaders方法
+        // 否则需要在调用构造函数后手动调用loadShaders方法
         if (vsShader !== null && fsShader !== null) {
             this.loadShaders(vsShader, fsShader);
         }
@@ -193,6 +197,7 @@ export class GLProgram {
         console.log(JSON.stringify(this.attribMap));
     }
 
+    /** 将定义好的 `WebGLProgram` 对象添加到当前的 `WebGLRenderingContext`中 */
     bind(): void {
         this.gl.useProgram(this.program);
         this.bindCallback && this.bindCallback(this);
@@ -279,11 +284,10 @@ export class GLProgram {
         return false;
     }
 
-    /** 载入 Mat4 类型数据 */
+    /** 使用 `gl.uniformMatrix4fv` 方法载入类型为 `mat4` 的 `uniform` 变量到 `GLProgram` 对象中 */
     setMatrix4(name: string, mat: mat4): boolean {
         const loc: WebGLUniformLocation | null = this.getUniformLocation(name);
         if (loc) {
-            // FIXME 无法使用 mat.all() 代替 mat.values
             this.gl.uniformMatrix4fv(loc, false, mat.all());
             return true;
         }

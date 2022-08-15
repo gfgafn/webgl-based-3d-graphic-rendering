@@ -3,47 +3,48 @@ export type GLAttribBits = number;
 // TODO:完善注释
 export type GLAttribOffsetMap = { [key: string]: number };
 
+/** `GLAttribState` 类封装顶点属性相关的操作方法 */
 export class GLAttribState {
+    // 一般常用的顶点属性包括：位置坐标值、颜色值、纹理坐标值、法线值和切向量值等
     // 顶点属性：位置坐标
-    static readonly POSITION_BIT: number = 1 << 0;
-    static readonly POSITION_COMPONENT: number = 3; //xyz
-    static readonly POSITION_NAME: string = 'aPosition';
-    static readonly POSITION_LOCATION: number = 0;
+    static readonly POSITION_BIT: 0b00_000_000_001 = (1 << 0) as 0b00_000_000_001;
+    static readonly POSITION_COMPONENT: 3 = 3 as const; //xyz
+    static readonly POSITION_NAME: 'aPosition' = 'aPosition' as const;
+    static readonly POSITION_LOCATION: 0 = 0 as const;
     // 顶点属性：纹理坐标0
-    static readonly TEXCOORD_BIT: number = 1 << 1;
-    static readonly TEXCOORD_COMPONENT: number = 2; //st
-    static readonly TEXCOORD_NAME: string = 'aTexCoord';
-    static readonly TEXCOORD_LOCATION: number = 1;
+    static readonly TEXCOORD_BIT: 0b00_000_000_010 = (1 << 1) as 0b00_000_000_010;
+    static readonly TEXCOORD_COMPONENT: 2 = 2 as const; //st
+    static readonly TEXCOORD_NAME: 'aTexCoord' = 'aTexCoord' as const;
+    static readonly TEXCOORD_LOCATION: 1 = 1 as const;
     // 顶点属性：纹理坐标1
-    static readonly TEXCOORD1_BIT: number = 1 << 2;
-    static readonly TEXCOORD1_COMPONENT: number = 2;
-    static readonly TEXCOORD1_NAME: string = 'aTexCoord1';
-    static readonly TEXCOORD1_LOCATION: number = 2;
+    static readonly TEXCOORD1_BIT: 0b00_000_000_100 = (1 << 2) as 0b00_000_000_100;
+    static readonly TEXCOORD1_COMPONENT: 2 = 2 as const;
+    static readonly TEXCOORD1_NAME: 'aTexCoord1' = 'aTexCoord1' as const;
+    static readonly TEXCOORD1_LOCATION: 2 = 2 as const;
     // 顶点属性：法向量
-    static readonly NORMAL_BIT: number = 1 << 3;
-    static readonly NORMAL_COMPONENT: number = 3; //xyz
-    static readonly NORMAL_NAME: string = 'aNormal';
-    static readonly NORMAL_LOCATION: number = 3;
+    static readonly NORMAL_BIT: 0b00_000_001_000 = (1 << 3) as 0b00_000_001_000;
+    static readonly NORMAL_COMPONENT: 3 = 3 as const; //xyz
+    static readonly NORMAL_NAME: 'aNormal' = 'aNormal' as const;
+    static readonly NORMAL_LOCATION: 3 = 3 as const;
     // 顶点属性：切向量
-    static readonly TANGENT_BIT: number = 1 << 4;
-    static readonly TANGENT_COMPONENT: number = 4; //xyzw vec4
-    static readonly TANGENT_NAME: string = 'aTangent';
-    static readonly TANGENT_LOCATION: number = 4;
+    static readonly TANGENT_BIT: 0b00_000_010_000 = (1 << 4) as 0b00_000_010_000;
+    static readonly TANGENT_COMPONENT: 4 = 4 as const; //xyzw vec4
+    static readonly TANGENT_NAME: 'aTangent' = 'aTangent' as const;
+    static readonly TANGENT_LOCATION: 4 = 4 as const;
     // 顶点属性：颜色
-    static readonly COLOR_BIT: number = 1 << 5;
-    static readonly COLOR_COMPONENT: number = 4; // r g b a vec4
-    static readonly COLOR_NAME: string = 'aColor';
-    static readonly COLOR_LOCATION: number = 5;
-
+    static readonly COLOR_BIT: 0b00_000_100_000 = (1 << 5) as 0b00_000_100_000;
+    static readonly COLOR_COMPONENT: 4 = 4 as const; // r g b a vec4
+    static readonly COLOR_NAME: 'aColor' = 'aColor' as const;
+    static readonly COLOR_LOCATION: 5 = 5 as const;
     /*
-     static readonly WEIGHT0_BIT: number = (1 << 7);
-     static readonly WEIGHT1_BIT: number = (1 << 8);
-     static readonly WEIGHT2_BIT: number = (1 << 9);
-     static readonly WEIGHT3_BIT: number = (1 << 10);
+    static readonly WEIGHT0_BIT: 0b00_010_000_000 = (1 << 7) as 0b00_010_000_000;
+    static readonly WEIGHT1_BIT: 0b00_100_000_000 = (1 << 8) as 0b00_100_000_000;
+    static readonly WEIGHT2_BIT: 0b01_000_000_000 = (1 << 9) as 0b01_000_000_000;
+    static readonly WEIGHT3_BIT: 0b10_000_000_000 = (1 << 10) as 0b10_000_000_000;
     */
 
-    static readonly ATTRIBSTRIDE: string = 'STRIDE';
-    static readonly ATTRIBBYTELENGTH: string = 'BYTELENGTH';
+    static readonly ATTRIBSTRIDE: 'STRIDE' = 'STRIDE' as const;
+    static readonly ATTRIBBYTELENGTH: 'BYTELENGTH' = 'BYTELENGTH' as const;
 
     // float类型和uint16类型的字节长度
     static readonly FLOAT32_SIZE = Float32Array.BYTES_PER_ELEMENT;
@@ -136,7 +137,8 @@ export class GLAttribState {
     }
 
     // TODO:完善注释
-    /** 顺序数组存储方式
+    /**
+     * 顺序数组存储方式
      * 先存储所有顶点的位置坐标数据，然后再依次存储其他顶点属性相关数据
      */
     static getSequencedLayoutAttribOffsetMap(
@@ -242,7 +244,10 @@ export class GLAttribState {
         return byteOffset;
     }
 
-    /** 绑定当前缓冲区范围到 `gl.ARRAY_BUFFER` ,成为当前顶点缓冲区对象的通用顶点属性并指定它的布局 (缓冲区对象中的偏移量)。 */
+    /**
+     * 调用`gl.vertexAttribPointer()`方法绑定当前缓冲区范围到 `gl.ARRAY_BUFFER` ,
+     * 成为当前顶点缓冲区对象的通用顶点属性并指定它的布局 (缓冲区对象中的偏移量)。
+     */
     static setAttribVertexArrayPointer(
         gl: WebGLRenderingContext,
         offsetMap: GLAttribOffsetMap,

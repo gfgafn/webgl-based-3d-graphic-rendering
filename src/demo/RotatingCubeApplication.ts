@@ -38,7 +38,9 @@ export class RotatingCubeApplication extends CameraApplication {
     private _hitAxis: EAxisType; // 为了支持鼠标点选，记录选中的坐标轴的enum值
 
     constructor(canvas: HTMLCanvasElement) {
-        super(canvas, { premultipliedAlpha: false }, true); // 调用基类构造函数
+        // 调用基类构造函数，最后一个参数为true，意味着我们要创建一个Canvas2D上下文渲染对象
+        // 这样我们才能使用该上下文对象进行2D文字渲染
+        super(canvas, { premultipliedAlpha: false }, true);
 
         // 初始化角位移和角速度
         this.cubeAngle = 0;
@@ -49,12 +51,16 @@ export class RotatingCubeApplication extends CameraApplication {
 
         this.currTexIdx = 0;
         this.textures = [];
+        // 我们在WebGLApplication基类中内置了default的纹理贴图
         this.textures.push(GLTextureCache.instance.getMust('default'));
 
         // 创建封装后的GLProgram类
+        // 我们在WebGLApplication基类中内置texture/color的GLProgram对象
         this.textureProgram = GLProgramCache.instance.getMust('texture');
         this.colorProgram = GLProgramCache.instance.getMust('color');
 
+        // 创建cube的渲染数据
+        // 对于三角形的渲染数据，我们使用GLMeshBuilder中立即模式绘制方式
         this.cube = new Cube(0.5, 0.5, 0.5);
         const data: GeometryData = this.cube.makeGeometryData();
         this.cubeVAO = data.makeStaticVAO(this.gl);
@@ -77,7 +83,6 @@ export class RotatingCubeApplication extends CameraApplication {
 
         // 绘制立方体
         this.matStack.loadIdentity();
-
         // 第一个渲染堆栈操作
         {
             this.matStack.pushMatrix(); // 矩阵进栈
@@ -142,7 +147,7 @@ export class RotatingCubeApplication extends CameraApplication {
         x: number = this.canvas.width * 0.5,
         y: number = 150,
     ): void {
-        if (this.ctx2D !== null) {
+        if (this.ctx2D) {
             this.ctx2D.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx2D.save(); // 渲染状态进栈
             this.ctx2D.fillStyle = 'red'; // 红色
@@ -203,6 +208,8 @@ export class RotatingCubeApplication extends CameraApplication {
     }
 
     render(): void {
+        // FIXME: 切记，一定要先清屏（清除掉颜色缓冲区和深度缓冲区）(书上有，随书源码中无？？？)
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
         this._renderCube();
         this._renderTriangle();
         this._renderText('第一个WebGL Demo');

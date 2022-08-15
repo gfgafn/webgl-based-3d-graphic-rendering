@@ -1,30 +1,24 @@
-import { mat4, vec4, vec3 } from '@tlaukkan/tsm';
+import { mat4, vec3, vec4 } from '@tlaukkan/tsm';
 import { EAxisType } from '../common/math/MathHelper';
 import { vec3Adapter, vec4Adapter } from '../common/math/tsmAdapter';
 import { GLMeshBuilder } from '../webgl/WebGLMesh';
 
 export class CoordSystem {
+    // 此处更改参见 https://www.typescriptlang.org/docs/handbook/2/classes.html#parameter-properties
     constructor(
         /** 当前坐标系被绘制在哪个视口中 */
         public viewport: number[],
         /** 当前坐标系绕哪个轴旋转 */
-        public pos: vec3 = vec3Adapter.v0,
+        public position: vec3 = vec3Adapter.v0,
         /** 当前坐标系的旋转的角度(不是弧度!) */
         public axis: vec3 = vec3.up,
-        /** 当前坐标系的位置，如果是多视口渲染的话，就为[0,0,0] */
+        /** 当前坐标系的位置，如果是多视口渲染的话，就为[0, 0, 0] */
         public angle: number = 0,
         /** 是否绘制旋转轴 */
         public isDrawAxis: boolean = false,
         /** 是否绘制为D3D左手系 */
         public isD3D: boolean = false,
-    ) {
-        this.viewport = viewport;
-        this.angle = angle;
-        this.axis = axis;
-        this.pos = pos;
-        this.isDrawAxis = isDrawAxis;
-        this.isD3D = isD3D;
-    }
+    ) {}
 }
 
 export class DrawHelper {
@@ -42,19 +36,20 @@ export class DrawHelper {
         DrawHelper.drawBoundBox(builder, mat, mins, maxs, color);
     }
 
-    /*   /3--------/7
-        / |       / |
-       /  |      /  |
-      1---|-----5   |
-      |  /2- - -|- -6
-      | /       |  /
-      |/        | /
-      0---------4/
-    */
     /**
-     * 根据 `mins` 点（上图中的顶点2，左下后）和 `maxs`（上图中的顶点5，右上前）点的坐标，
+     * 根据 `mins` 点（下图中的顶点2，左下后）和 `maxs`（下图中的顶点5，右上前）点的坐标，
      * 使用参数指定的颜色绘制线框绑定盒，它是一个立方体
-     * GLMeshBuilder的begin / end被调用了三次
+     * `GLMeshBuilder`的`begin()` / `end()`被调用了三次
+     * ```plaintext
+     *    /3--------/7
+     *   / |       / |
+     *  /  |      /  |
+     * 1---|-----5   |
+     * |  /2- - -|- -6
+     * | /       |  /
+     * |/        | /
+     * 0---------4/
+     * ```
      */
     static drawBoundBox(
         builder: GLMeshBuilder,
@@ -66,10 +61,8 @@ export class DrawHelper {
         // 使用LINE_LOOP绘制底面，注意顶点顺序，逆时针方向，根据右手螺旋定则可知，法线朝外
         builder.begin(builder.gl.LINE_LOOP); // 使用的是LINE_LOOP图元绘制模式
         {
-            builder.color(color.r, color.g, color.b).vertex(mins.x, mins.y, mins.z);
-            // 2   - - -
-            builder.color(color.r, color.g, color.b).vertex(mins.x, mins.y, maxs.z);
-            // 0   - - +
+            builder.color(color.r, color.g, color.b).vertex(mins.x, mins.y, mins.z); // 2   - - -
+            builder.color(color.r, color.g, color.b).vertex(mins.x, mins.y, maxs.z); // 0   - - +
             builder.color(color.r, color.g, color.b).vertex(maxs.x, mins.y, maxs.z); // 4   + - +
             builder.color(color.r, color.g, color.b).vertex(maxs.x, mins.y, mins.z); // 6   + - -
             builder.end(mat);
@@ -80,7 +73,6 @@ export class DrawHelper {
             builder.color(color.r, color.g, color.b).vertex(mins.x, maxs.y, mins.z); // 3   - + -
             builder.color(color.r, color.g, color.b).vertex(maxs.x, maxs.y, mins.z); // 7   + + -
             builder.color(color.r, color.g, color.b).vertex(maxs.x, maxs.y, maxs.z); // 5   + + +
-
             builder.color(color.r, color.g, color.b).vertex(mins.x, maxs.y, maxs.z); // 1   - + +
             builder.end(mat);
         }
@@ -99,17 +91,18 @@ export class DrawHelper {
         }
     }
 
-    /*   /3--------/7
-        / |       / |
-       /  |      /  |
-      1---|-----5   |
-      |  /2- - -|- -6
-      | /       |  /
-      |/        | /
-      0---------4/
-    */
     /**
      * 绘制纹理立方体
+     * ```plaintext
+     *    /3--------/7
+     *   / |       / |
+     *  /  |      /  |
+     * 1---|-----5   |
+     * |  /2- - -|- -6
+     * | /       |  /
+     * |/        | /
+     * 0---------4/
+     * ```
      * @param builder
      * @param mat
      * @param halfLen
@@ -121,54 +114,12 @@ export class DrawHelper {
         mat: mat4,
         halfLen: number = 0.2,
         tc: number[] = [
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            0,
-            1, // 前面
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            0,
-            1, // 右面
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            0,
-            1, // 后面
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            0,
-            1, // 左面
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            0,
-            1, // 上面
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            0,
-            1, // 下面
+            ...[0, 0, 1, 0, 1, 1, 0, 1], // 前面
+            ...[0, 0, 1, 0, 1, 1, 0, 1], // 右面
+            ...[0, 0, 1, 0, 1, 1, 0, 1], // 后面
+            ...[0, 0, 1, 0, 1, 1, 0, 1], // 左面
+            ...[0, 0, 1, 0, 1, 1, 0, 1], // 上面
+            ...[0, 0, 1, 0, 1, 1, 0, 1], // 下面
         ],
     ): void {
         // 前面
@@ -265,6 +216,7 @@ export class DrawHelper {
         builder.gl.enable(builder.gl.DEPTH_TEST); // 恢复开始帧缓存深度测试
     }
 
+    /** 绘制坐标系 */
     static drawCoordSystem(
         builder: GLMeshBuilder,
         mat: mat4,

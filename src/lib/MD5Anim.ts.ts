@@ -1,9 +1,9 @@
 import { mat4, quat, vec3 } from '@tlaukkan/tsm';
 import { MathHelper } from '../common/math/MathHelper';
 import {
-    IDoom3Tokenizer,
-    IDoom3Token,
     Doom3Factory,
+    IDoom3Token,
+    IDoom3Tokenizer,
 } from '../common/utils/Doom3Tokenizer';
 
 export enum EAnimatedComponent {

@@ -1,7 +1,7 @@
 import { mat4, vec3 } from '@tlaukkan/tsm';
-import { Frustum } from './Frustum';
 import { MathHelper } from '../common/math/MathHelper';
 import { mat4Adapter } from '../common/math/tsmAdapter';
+import { Frustum } from './Frustum';
 
 export enum ECameraType {
     /** 第一人称运动摄像机
@@ -177,11 +177,12 @@ export class Camera {
         this.gl = gl;
         this._aspectRatio = width / height; // 纵横比
         this._fovY = MathHelper.toRadian(fovY);
+        // FIXME
         // 我们的摄像机默认 fovY 参数是以角度表示，TSM 数学库的 perspective 静态方法使用的是弧度表示，
         // 因此需要进行转换操作
         this._near = zNear;
         this._far = zFar;
-        // FIXME: 初始化时，矩阵设置为单位矩阵
+        // 初始化时，矩阵设置为单位矩阵
         this._projectionMatrix = new mat4().setIdentity();
         this._viewMatrix = new mat4().setIdentity();
         this._viewProjMatrix = new mat4().setIdentity();
@@ -195,7 +196,7 @@ export class Camera {
         this._frustum = new Frustum();
     }
 
-    //局部坐标系下的前后运动
+    /** 局部坐标系下的前后运动 */
     moveForward(speed: number): void {
         // 对于第一人称摄像机来说，你双脚不能离地，因此运动时不能变动y轴上的数据
         if (this._type === ECameraType.FPSCAMERA) {
@@ -207,7 +208,9 @@ export class Camera {
             this._position.y += this._zAxis.y * speed;
             this._position.z += this._zAxis.z * speed;
         }
-    } //局部坐标系下的左右运动
+    }
+
+    /** 局部坐标系下的左右运动 */
     moveRightward(speed: number): void {
         // 对于第一人称摄像机来说，你双脚不能离地，因此运动时不能变动y轴上的数据
         if (this._type === ECameraType.FPSCAMERA) {
@@ -221,7 +224,7 @@ export class Camera {
         }
     }
 
-    //局部坐标系下的上下运动
+    /** 局部坐标系下的上下运动 */
     moveUpward(speed: number): void {
         // 对于第一人称摄像机来说，只调整上下的高度，目的是模拟眼睛的高度
         if (this._type === ECameraType.FPSCAMERA) {
@@ -249,7 +252,6 @@ export class Camera {
         }
         // 对于绕y轴的旋转，你会发现y轴不变，变动的是其他两个轴
         // 因此我们需要获取旋转angle后，另外两个轴的方向，可以使用multiplyVec3方法实现
-        // FIXME: mat4Adapter.m0.multiplyVec3(this._zAxis, this._zAxis);
         this._zAxis.xyz = mat4Adapter.m0.multiplyVec3(this._zAxis).xyz;
         this._xAxis.xyz = mat4Adapter.m0.multiplyVec3(this._xAxis).xyz;
     }
@@ -262,8 +264,6 @@ export class Camera {
         mat4Adapter.m0.rotate(angle, this._xAxis);
         // 对于绕x轴的旋转，你会发现x轴不变，变动的是其他两个轴
         // 因此我们需要获取旋转angle后，另外两个轴的方向，可以使用multiplyVec3方法实现
-        // FIXME: mat4Adapter.m0.multiplyVec3(this._zAxis, this._zAxis);
-        this._zAxis.xyz = mat4Adapter.m0.multiplyVec3(this._zAxis).xyz;
         this._yAxis.xyz = mat4Adapter.m0.multiplyVec3(this._yAxis).xyz;
         this._zAxis.xyz = mat4Adapter.m0.multiplyVec3(this._zAxis).xyz;
     }
@@ -277,25 +277,19 @@ export class Camera {
             mat4Adapter.m0.rotate(angle, this._zAxis);
             // 对于绕z轴的旋转，你会发现z轴不变，变动的是其他两个轴
             // 因此我们需要获取旋转angle后另外两个轴的方向，可以使用multiplyVec3方法实现
-            // FIXME: mat4Adapter.m0.multiplyVec3(this._xAxis, this._xAxis);
             this._xAxis.xyz = mat4Adapter.m0.multiplyVec3(this._xAxis).xyz;
             this._yAxis.xyz = mat4Adapter.m0.multiplyVec3(this._yAxis).xyz;
         }
     }
 
-    /** 当我们对摄像机进行移动或旋转操作时，或者改变投影的一些属性后，需要更新摄像机的视图矩阵和投影矩阵。
+    /**
+     * 当我们对摄像机进行移动或旋转操作时，或者改变投影的一些属性后，需要更新摄像机的视图矩阵和投影矩阵。
      * 本书为了简单起见，并不对这些操作进行优化，而是采取最简单直接的方式，每帧都自动计算相关矩阵
-     * 摄像机的update需要每帧被调用，因此其最好的调用时机点是在Application及其子类的update虚方法中。
+     * 摄像机的update需要每帧被调用，因此其最好的调用时机点是在`Application`及其子类的`update`虚方法中。
      */
     // FIXME：删除
     update(intervalSec: number): void {
         // 使用mat4的perspective静态方法计算投影矩阵
-        // this._projectionMatrix = mat4.perspective(
-        //     this._fovY,
-        //     this._aspectRatio,
-        //     this._near,
-        //     this._far,
-        // );
         this._projectionMatrix = mat4Adapter.perspective(
             this._fovY,
             this._aspectRatio,
@@ -307,8 +301,6 @@ export class Camera {
         // 使用 _projectionMatrix ＊ _viewMatrix顺序合成_viewProjMatrix，注意矩阵相乘的顺序
         mat4.product(this._projectionMatrix, this._viewMatrix, this._viewProjMatrix);
         // 然后再计算出_viewProjMatrix的逆矩阵
-        // this._viewProjMatrix.copy( this._invViewProjMatrix );
-        // this._viewProjMatrix.inverse( this._invViewProjMatrix );
         this._invViewProjMatrix.init(
             new mat4().setIdentity().init(this._viewProjMatrix.all()).inverse().all(),
         );
@@ -328,22 +320,6 @@ export class Camera {
         const y: number = -vec3.dot(this._yAxis, this._position);
         const z: number = -vec3.dot(this._zAxis, this._position);
         // 合成视图矩阵（摄像机矩阵）
-        // this._viewMatrix.values[0] = this._xAxis.x;
-        // this._viewMatrix.values[1] = this._yAxis.x;
-        // this._viewMatrix.values[2] = this._zAxis.x;
-        // this._viewMatrix.values[3] = 0.0;
-        // this._viewMatrix.values[4] = this._xAxis.y;
-        // this._viewMatrix.values[5] = this._yAxis.y;
-        // this._viewMatrix.values[6] = this._zAxis.y;
-        // this._viewMatrix.values[7] = 0.0;
-        // this._viewMatrix.values[8] = this._xAxis.z;
-        // this._viewMatrix.values[9] = this._yAxis.z;
-        // this._viewMatrix.values[10] = this._zAxis.z;
-        // this._viewMatrix.values[11] = 0.0;
-        // this._viewMatrix.values[12] = x;
-        // this._viewMatrix.values[13] = y;
-        // this._viewMatrix.values[14] = z;
-        // this._viewMatrix.values[15] = 1.0;
         this._viewMatrix.init([
             ...[this._xAxis.x, this._yAxis.x, this._zAxis.x, 0.0],
             ...[this._xAxis.y, this._yAxis.y, this._zAxis.y, 0.0],
@@ -351,8 +327,7 @@ export class Camera {
             ...[x, y, z, 1.0],
         ]);
 
-        //求view的逆矩阵，也就是世界矩阵
-        // this._viewMatrix.inverse( this._invViewMatrix );
+        //求viewMatrix的逆矩阵，也就是世界矩阵
         this._invViewMatrix.init(new mat4().init(this._viewMatrix.all()).inverse().all());
 
         this._frustum.buildFromCamera(this);
@@ -367,15 +342,6 @@ export class Camera {
         this._viewMatrix = mat4.lookAt(this._position, target, up);
         // 从抽摄像机矩阵中抽取世界坐标系中表示的3个轴
         // 我们需要使用世界坐标系表示的轴进行有向运动
-        // this._xAxis.x = this._viewMatrix.values[0];
-        // this._yAxis.x = this._viewMatrix.values[1];
-        // this._zAxis.x = this._viewMatrix.values[2];
-        // this._xAxis.y = this._viewMatrix.values[4];
-        // this._yAxis.y = this._viewMatrix.values[5];
-        // this._zAxis.y = this._viewMatrix.values[6];
-        // this._xAxis.z = this._viewMatrix.values[8];
-        // this._yAxis.z = this._viewMatrix.values[9];
-        // this._zAxis.z = this._viewMatrix.values[10];
         this._xAxis.x = this._viewMatrix.at(0);
         this._yAxis.x = this._viewMatrix.at(1);
         this._zAxis.x = this._viewMatrix.at(2);
