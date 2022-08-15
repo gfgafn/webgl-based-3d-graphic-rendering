@@ -6,6 +6,28 @@ export enum EGLTexWrapType {
     GL_CLAMP_TO_EDGE,
 }
 
+const CSSColors = <const>[
+    'aqua', // 浅绿色
+    'black', // 黑色
+    'blue', // 蓝色
+    'fuchsia', // 紫红色
+    'gray', // 灰色
+    'green', // 绿色
+    'lime', // 绿黄色
+    'maroon', // 褐红色
+    'navy', // 海军蓝
+    'olive', // 橄榄色
+    'orange', // 橙色
+    'purple', // 紫色
+    'red', // 红色
+    'silver', // 银灰色
+    'teal', // 蓝绿色
+    'yellow', // 黄色
+    'white', // 白色
+];
+
+type CSSColor = typeof CSSColors[number];
+
 /** `GLTexuture` 类可以在 `GLStaticMesh` 或 `GLMeshBuilder` 生成的网格对象上进行纹理贴图操作。 */
 export class GLTexture {
     gl: WebGLRenderingContext;
@@ -25,25 +47,7 @@ export class GLTexture {
     target: number;
 
     /** css标准色字符串 */
-    static readonly Colors: string[] = [
-        'aqua', //浅绿色
-        'black', //黑色
-        'blue', //蓝色
-        'fuchsia', //紫红色
-        'gray', //灰色
-        'green', //绿色
-        'lime', //绿黄色
-        'maroon', //褐红色
-        'navy', //海军蓝
-        'olive', //橄榄色
-        'orange', //橙色
-        'purple', //紫色
-        'red', //红色
-        'silver', //银灰色
-        'teal', //蓝绿色
-        'yellow', //黄色
-        'white', //白色
-    ];
+    static readonly Colors: ReadonlyArray<CSSColor> = CSSColors;
     /**
      * @param gl WebGLRenderingContext
      * @param name 纹理的名称
@@ -55,7 +59,7 @@ export class GLTexture {
         this.format = gl.RGBA;
         this.type = gl.UNSIGNED_BYTE;
         const tex: WebGLTexture | null = gl.createTexture();
-        if (!tex) throw new Error('WebGLTexture创建不成功！');
+        if (!tex) throw new Error('WebGLTexture创建不成功!');
         this.texture = tex;
         this.target = gl.TEXTURE_2D;
         this.name = name;
@@ -136,15 +140,15 @@ export class GLTexture {
     static getNextPowerOfTwo(x: number): number {
         if (x <= 0) throw new Error('参数必须要大于0! ');
         --x;
-        // FIXME
         for (let i = 1; i < 32; i <<= 1) {
             x = x | (x >> i);
         }
         return x + 1;
     }
 
-    /** 将非2的n次方的srcImage转换成2的n次方的CanvasRenderingContext2D对象，
-     * 然后后续用来生成mipmap纹理
+    /**
+     * 将非2的n次方的`srcImage`转换成`2`的`n`次方的`CanvasRenderingContext2D`对象，
+     * 然后后续用来生成`mipmap`纹理
      */
     static createPowerOfTwoCanvas(
         srcImage: HTMLImageElement | HTMLCanvasElement,
@@ -171,7 +175,7 @@ export class GLTexture {
     }
 
     bind(unit: number = 0): void {
-        if (this.texture !== null) {
+        if (this.texture) {
             this.gl.activeTexture(this.gl.TEXTURE0 + unit);
             this.gl.bindTexture(this.target, this.texture);
         }
@@ -185,6 +189,11 @@ export class GLTexture {
 
     //TEXTURE_MIN_FILTER: NEAREST_MIPMAP_LINEAR(默认)
     //TEXTURE_MAG_FILTER: LINEAR(默认)
+    /**
+     * 调用`WebGLRenderingContext.texParameteri()`方法设置纹理参数
+     * @param minLinear
+     * @param magLinear
+     */
     filter(minLinear: boolean = true, magLinear: boolean = true): void {
         // 在设置filter时先要绑定当前的纹理目标
         this.gl.bindTexture(this.target, this.texture);
@@ -248,8 +257,8 @@ export class GLTexture {
         canvas.height = 32 * step;
         const context: CanvasRenderingContext2D | null = canvas.getContext('2d');
         if (context === null) {
-            alert('离屏Canvas获取渲染上下文失败！');
-            throw new Error('离屏Canvas获取渲染上下文失败！');
+            alert('离屏Canvas获取渲染上下文失败!');
+            throw new Error('离屏Canvas获取渲染上下文失败!');
         }
         for (let i: number = 0; i < step; i++) {
             for (let j: number = 0; j < step; j++) {

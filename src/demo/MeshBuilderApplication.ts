@@ -1,50 +1,55 @@
+import { mat4, vec3 } from '@tlaukkan/tsm';
+import { CanvasKeyBoardEvent } from '../common/Application';
+import { EAxisType } from '../common/math/MathHelper';
+import { mat4Adapter } from '../common/math/tsmAdapter';
 import { CameraApplication } from '../lib/CameraApplication';
-import { GLMeshBuilder, EVertexLayout } from '../webgl/WebGLMesh';
+import { DrawHelper } from '../lib/DrawHelper';
 import { GLAttribState } from '../webgl/WebGLAttribState';
-import { GLTextureCache } from '../webgl/WebGLTextureCache';
+import { GLCoordSystem } from '../webgl/WebGLCoordSystem';
+import { EVertexLayout, GLMeshBuilder } from '../webgl/WebGLMesh';
 import { GLProgram } from '../webgl/WebGLProgram';
 import { GLProgramCache } from '../webgl/WebGLProgramCache';
-import { GLCoordSystem } from '../webgl/WebGLCoordSystem';
-import { CanvasKeyBoardEvent } from '../common/Application';
-import { DrawHelper } from '../lib/DrawHelper';
 import { GLTexture } from '../webgl/WebGLTexture';
-import { EAxisType } from '../common/math/MathHelper';
-import { mat4, vec3 } from '@tlaukkan/tsm';
-import { mat4Adapter } from '../common/math/tsmAdapter';
+import { GLTextureCache } from '../webgl/WebGLTextureCache';
 
 export class MeshBuilderApplication extends CameraApplication {
-    colorShader: GLProgram; // 颜色着色器
-    textureShader: GLProgram; // 纹理着色器
-    texture: GLTexture; // 纹理着色器所使用的纹理对象
+    /** 颜色着色器 */
+    colorShader: GLProgram;
+    /** 纹理着色器 */
+    textureShader: GLProgram;
+    /** 纹理着色器所使用的纹理对象 */
+    texture: GLTexture;
 
-    builder0: GLMeshBuilder; // 使用EVertexLayout.INTERLEAVED存储顶点数据的基于颜色着色器的MeshBuilder对象
-    builder1: GLMeshBuilder; // 使用EVertexLayout.SEQUENCED存储顶点数据的基于颜色着色器的MeshBuilder对象
-    builder2: GLMeshBuilder; // 使用EVertexLayout.SEPARATED存储顶点数据的基于颜色着色器的MeshBuilder对象
+    /** 使用`EVertexLayout.INTERLEAVED`存储顶点数据的基于颜色着色器的`GLMeshBuilder`对象 */
+    builder0: GLMeshBuilder;
+    /** 使用`EVertexLayout.SEQUENCED`存储顶点数据的基于颜色着色器的`GLMeshBuilder`对象 */
+    builder1: GLMeshBuilder;
+    /** 使用EVertexLayout.SEPARATED存储顶点数据的基于颜色着色器的`GLMeshBuilder`对象 */
+    builder2: GLMeshBuilder;
 
-    tbuilder0: GLMeshBuilder; // 使用EVertexLayout.INTERLEAVED存储顶点数据的基于纹理着色器的MeshBuilder对象
-    tbuilder1: GLMeshBuilder; // 使用EVertexLayout.SEQUENCED存储顶点数据的基于纹理着色器的MeshBuilder对象
-    tbuilder2: GLMeshBuilder; // 使用EVertexLayout.SEPARATED存储顶点数据的基于纹理着色器的MeshBuilder对象
+    /** 使用`EVertexLayout.INTERLEAVED`存储顶点数据的基于纹理着色器的`GLMeshBuilder`对象 */
+    tbuilder0: GLMeshBuilder;
+    /** 使用`EVertexLayout.SEQUENCED`存储顶点数据的基于纹理着色器的`GLMeshBuilder`对象 */
+    tbuilder1: GLMeshBuilder;
+    /** 使用`EVertexLayout.SEPARATED`存储顶点数据的基于纹理着色器的`GLMeshBuilder`对象 */
+    tbuilder2: GLMeshBuilder;
 
-    angle: number = 0; // 用来更新旋转角度
-    coords: GLCoordSystem[]; // 用于多视口渲染使用的GLCoordSystem对象
+    /** 用来更新旋转角度 */
+    angle: number = 0;
+    /** 用于多视口渲染使用的`GLCoordSystem`对象 */
+    coords: GLCoordSystem[];
 
-    // 用于切换页面1和页面2的绘制函数，类型是一个函数对象
-    // currentDrawMethod: Function;
+    /** 用于切换页面1和页面2的绘制函数，类型是一个函数 */
     currentDrawMethod: () => void;
 
-    private setViewport(coord: GLCoordSystem): void {
-        // camera的setViewport方法内部会调用:
-        // 1、gl.viewport ( x , y , width , height )方法
-        // 2、gl.scissor ( x , y , width , height )方法
-        // 而在WebGLApplication的构造函数调用的GLHelper.setDefaultState方法已经开启了SCISSOR_TEST
-        // 因此可以进行视口大小的裁剪操作了，超出视口部分的内容都被裁剪掉了!!
-        this.camera.setViewport(
-            coord.viewport[0],
-            coord.viewport[1],
-            coord.viewport[2],
-            coord.viewport[3],
-        );
-    }
+    private cubeTexCoords: number[] = [
+        ...[0, 0.5, 0.5, 0.5, 0.5, 1, 0, 1], // 0区映射到立方体的前面
+        ...[0.5, 0.5, 1, 0.5, 1, 1, 0.5, 1], // 1区映射到立方体的右面
+        ...[0, 0, 0.5, 0, 0.5, 0.5, 0, 0.5], // 2区映射到立方体的后面
+        ...[0.5, 0, 1, 0, 1, 0.5, 0.5, 0.5], // 3区映射到立方体的左面
+        ...[0.25, 0.25, 0.75, 0.25, 0.75, 0.75, 0.25, 0.75], // 4区映射到立方体的上面
+        ...[0, 0, 1, 0, 1, 1, 0, 1], // 整个贴图映射到立方体的下面
+    ];
 
     constructor(canvas: HTMLCanvasElement) {
         super(canvas);
@@ -106,13 +111,37 @@ export class MeshBuilderApplication extends CameraApplication {
         this.camera.z = 4; // 调整摄像机位置
         // 初始化时指向页面1的绘图函数
         this.currentDrawMethod = this.drawByMatrixWithColorShader;
+        // BUG
+        // this.currentDrawMethod = this.drawByMultiViewportsWithTextureShader;
     }
 
+    /** 将`GLCoorSystem`中的`viewport`数据设置到`WebGL`上下文对象中 */
+    private setViewport(coord: GLCoordSystem): void {
+        // camera的setViewport方法内部会调用:
+        // 1、gl.viewport (x, y, width, height)方法
+        // 2、gl.scissor (x, y, width, height)方法
+        // 而在WebGLApplication的构造函数调用的GLHelper.setDefaultState方法已经开启了SCISSOR_TEST
+        // 因此可以进行视口大小的裁剪操作了，超出视口部分的内容都被裁剪掉了!!
+        this.camera.setViewport(
+            coord.viewport[0],
+            coord.viewport[1],
+            coord.viewport[2],
+            coord.viewport[3],
+        );
+    }
+
+    /** @override */
     update(elapsedMsec: number, intervalSec: number): void {
         // 每帧旋转1度
         this.angle += 1;
         // 调用基类方法，这样就能让摄像机进行更新
         super.update(elapsedMsec, intervalSec);
+    }
+
+    /** @override */
+    render(): void {
+        // 调用的的currentDrawMethod这个回调函数，该函数指向当前要渲染的页面方法
+        this.currentDrawMethod();
     }
 
     drawByMatrixWithColorShader(): void {
@@ -130,7 +159,7 @@ export class MeshBuilderApplication extends CameraApplication {
         this.matStack.pushMatrix();
         {
             this.matStack.translate(new vec3([-1.5, 0, 0])); // 将坐标系左移1.5个单位（右移为正，左移为负)
-            this.matStack.rotate(this.angle, vec3.forward); // 绕着right轴每帧旋转this.angle数量，单位为度而不是弧度
+            this.matStack.rotate(this.angle, vec3.forward); // 绕着Z轴每帧旋转this.angle数量，单位为度而不是弧度
             // 合成model-view-projection矩阵，存储到mat4的静态变量中，减少内存的重新分配
             mat4.product(
                 this.camera.viewProjectionMatrix,
@@ -176,11 +205,11 @@ export class MeshBuilderApplication extends CameraApplication {
             );
         }
 
-        // EVertexLayout.SEPARATED 顶点存储格式绘制绘制绕[ 1 , 1 , 1 ]轴转转的立方体
+        // EVertexLayout.SEPARATED 顶点存储格式绘制绘制绕[1, 1, 1]轴转转的立方体
         this.matStack.pushMatrix(); // 矩阵堆栈进栈
         {
             this.matStack.translate(new vec3([1.5, 0, 0])); // 将坐标系右移1.5个单位（右移为正，左移为负)
-            this.matStack.rotate(-this.angle, new vec3([1, 1, 1]).normalize()); // 绕[ 1 , 1 , 1 ]轴旋转，主要轴调用normalize方法进行单位化
+            this.matStack.rotate(-this.angle, new vec3([1, 1, 1]).normalize()); // 绕[1, 1, 1]轴旋转，主要轴调用normalize方法进行单位化
             // 合成model-view-projection矩阵，存储到mat4的静态变量中，减少内存的重新分配
             mat4.product(
                 this.camera.viewProjectionMatrix,
@@ -199,57 +228,6 @@ export class MeshBuilderApplication extends CameraApplication {
         // 恢复三角形背面剔除功能
         this.gl.enable(this.gl.CULL_FACE);
     }
-
-    private cubeTexCoords: number[] = [
-        0,
-        0.5,
-        0.5,
-        0.5,
-        0.5,
-        1,
-        0,
-        1, // 0区映射到立方体的前面
-        0.5,
-        0.5,
-        1,
-        0.5,
-        1,
-        1,
-        0.5,
-        1, // 1区映射到立方体的右面
-        0,
-        0,
-        0.5,
-        0,
-        0.5,
-        0.5,
-        0,
-        0.5, // 2区映射到立方体的后面
-        0.5,
-        0,
-        1,
-        0,
-        1,
-        0.5,
-        0.5,
-        0.5, // 3区映射到立方体的左面
-        0.25,
-        0.25,
-        0.75,
-        0.25,
-        0.75,
-        0.75,
-        0.25,
-        0.75, // 4区映射到立方体的上面
-        0,
-        0,
-        1,
-        0,
-        1,
-        1,
-        0,
-        1, // 整个贴图映射到立方体的下面
-    ];
 
     drawByMultiViewportsWithTextureShader(): void {
         // 第一步，设置viewport
@@ -384,7 +362,7 @@ export class MeshBuilderApplication extends CameraApplication {
             );
         }
 
-        // 在viewport5中绘制绕[ 1 , 1 , 1 ]轴旋转、使用默认贴图坐标的立方体
+        // 在viewport5中绘制绕[1, 1, 1]轴旋转、使用默认贴图坐标的立方体
         this.setViewport(this.coords[5]);
         this.matStack.pushMatrix();
         {
@@ -403,11 +381,6 @@ export class MeshBuilderApplication extends CameraApplication {
                 1.5,
             );
         }
-    }
-
-    render(): void {
-        // 调用的的currentDrawMethod这个回调函数，该函数指向当前要渲染的页面方法
-        this.currentDrawMethod();
     }
 
     onKeyPress(evt: CanvasKeyBoardEvent): void {

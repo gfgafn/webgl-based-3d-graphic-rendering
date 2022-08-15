@@ -1,4 +1,3 @@
-import { Camera } from './Camera';
 import { Dictionary } from '../common/container/Dictionary';
 import { TypedArrayList } from '../common/container/TypedArrayList';
 import { HttpRequest, ImageInfo } from '../common/utils/HttpRequest';
@@ -7,6 +6,7 @@ import { GLStaticMesh } from '../webgl/WebGLMesh';
 import { GLProgram } from '../webgl/WebGLProgram';
 import { GLTexture } from '../webgl/WebGLTexture';
 import { GLTextureCache } from '../webgl/WebGLTextureCache';
+import { Camera } from './Camera';
 import { Q3BspParser, Q3BSPSurface } from './Quake3BspParser';
 
 /** Quake3BspScene类用来从服务器异步加载纹理（loadTextures方法）、
@@ -52,15 +52,14 @@ export class Quake3BspScene {
             }
             Promise.all(_promises)
                 .then((images: (ImageInfo | null)[]) => {
-                    for (let i: number = 0; i < images.length; i++) {
-                        const img: ImageInfo | null = images[i];
+                    images.forEach((img) => {
                         if (img) {
                             // 加载纹理
                             const tex: GLTexture = new GLTexture(this.gl, img.name);
                             tex.upload(img.image);
                             this.texDict.insert(img.name, tex);
                         }
-                    }
+                    });
                     console.log(this.texDict.keys);
                     resolve();
                 })
@@ -74,39 +73,40 @@ export class Quake3BspScene {
         // 因此每个渲染顶点占用5个float
         const vertices: Float32Array = new Float32Array(parser.vertices.length * 5);
         let j: number = 0; // 将Q3BSPVertex复制到渲染顶点中
-        for (let i: number = 0; i < parser.vertices.length; i++) {
-            vertices[j++] = parser.vertices[i].x;
-            vertices[j++] = parser.vertices[i].y;
-            vertices[j++] = parser.vertices[i].z;
-            vertices[j++] = parser.vertices[i].u;
-            vertices[j++] = parser.vertices[i].v;
-        } // 完成渲染用的顶点数据后，接着转换索引数据
-        const indices: TypedArrayList<Uint16Array> = new TypedArrayList(Uint16Array); // 重组索引，先bsp地图的索引缓存，遍历所有Q3BSPSurface
-        for (let i: number = 0; i < parser.mapSurfaces.length; i++) {
-            // 逐表面
-            const surf: Q3BSPSurface = parser.mapSurfaces[i];
+        parser.vertices.forEach((vert) => {
+            vertices[j++] = vert.x;
+            vertices[j++] = vert.y;
+            vertices[j++] = vert.z;
+            vertices[j++] = vert.u;
+            vertices[j++] = vert.v;
+        });
+        // 完成渲染用的顶点数据后，接着转换索引数据
+        const indices: TypedArrayList<Uint16Array> = new TypedArrayList(Uint16Array);
+        // 重组索引，先bsp地图的索引缓存，遍历所有Q3BSPSurface
+        parser.mapSurfaces.forEach((surf: Q3BSPSurface) => {
             // 获取当前正在使用的Q3BSPSurface对象            // 注意使用下面如何寻址纹理名
             let tex: GLTexture | undefined = this.texDict.find(
                 parser.textures[surf.textureIdx].name,
             );
             if (tex === undefined) {
                 tex = this._defaultTexture;
-            } // 起始地址和索引数量，这是关键点，地址用byte表示，每个索引使用unsignedShort类型，所以占2个字节，所以要indices.length2
+            }
+            // 起始地址和索引数量，这是关键点，地址用byte表示，每个索引使用unsignedShort类型，所以占2个字节，所以要indices.length2
             const drawSurf: DrawSurface = new DrawSurface(
                 tex,
                 indices.length * 2,
                 surf.numIndex,
             );
-            for (let k: number = 0; k < surf.numIndex; k++) {
+            for (let k = 0; k < surf.numIndex; k++) {
                 // 渲染BSP地图关键的索引寻址关系!! ! !一定要理解下面的关系式
                 const pos: number =
                     surf.firstVertIdx + parser.indices[surf.firstIndex + k];
                 indices.push(pos);
             }
             this.bspSurfaces.push(drawSurf);
-        } // 重组索引，静态物体的索引缓存
-        for (let i: number = 0; i < parser.meshSurfaces.length; i++) {
-            const surf: Q3BSPSurface = parser.meshSurfaces[i];
+        });
+        // 重组索引，静态物体的索引缓存
+        parser.meshSurfaces.forEach((surf: Q3BSPSurface) => {
             // 可能存在的情况是，BSP中有纹理名，但是服务器上不存在对应的图像，就需要先检测是否有该图像的存在
             let tex: GLTexture | undefined = this.texDict.find(
                 parser.textures[surf.textureIdx].name,
@@ -127,7 +127,8 @@ export class Quake3BspScene {
                 indices.push(pos);
             }
             this.meshSurfaces.push(drawSurf);
-        } // 合成一个庞大的顶点和索引缓存后，就可以生成GLStaticMesh对象了
+        });
+        // 合成一个庞大的顶点和索引缓存后，就可以生成GLStaticMesh对象了
         this._scene = new GLStaticMesh(
             this.gl,
             GLAttribState.POSITION_BIT | GLAttribState.TEXCOORD_BIT,
@@ -141,22 +142,20 @@ export class Quake3BspScene {
         program.bind(); // 设置当前的mvp矩阵
         program.setMatrix4(GLProgram.MVPMatrix, camera.viewProjectionMatrix);
         this._scene.bind(); // 绑定场景vao对象        // 遍历所有的BSP表面
-        for (let i: number = 0; i < this.bspSurfaces.length; i++) {
-            const surf: DrawSurface = this.bspSurfaces[i];
+        this.bspSurfaces.forEach((surf: DrawSurface) => {
             surf.texture.bind(); // 绑定纹理对象
             program.loadSampler(); // 载入纹理Sampler
             // 调用drawRange方法
             this._scene.drawRange(surf.byteOffset, surf.elemCount);
             surf.texture.unbind(); // 解除纹理对象的绑定
-        }
+        });
         // 接下来绘制所有静态mesh对象的表面，其渲染流程同上
-        for (let i: number = 0; i < this.meshSurfaces.length; i++) {
-            const surf: DrawSurface = this.meshSurfaces[i];
+        this.meshSurfaces.forEach((surf: DrawSurface) => {
             surf.texture.bind();
             program.loadSampler();
             this._scene.drawRange(surf.byteOffset, surf.elemCount);
             surf.texture.unbind();
-        }
+        });
         // 最后解绑vao和program对象
         this._scene.unbind();
         program.unbind();

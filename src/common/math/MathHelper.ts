@@ -154,7 +154,8 @@ export class MathHelper {
         return true;
     }
 
-    /** 计算 `AABB包围盒` 的 mins 和 `maxs` 值
+    /**
+     * 计算 `AABB包围盒` 的 mins 和 `maxs` 值
      * ```plaintext
      *    /3--------/7
      *   / |       / |
@@ -206,7 +207,8 @@ export class MathHelper {
         return out;
     }
 
-    /** 计算8个顶点的坐标值
+    /**
+     * 计算8个顶点的坐标值
      * ```plaintext
      *    /3--------/7
      *   / |       / |
@@ -285,13 +287,12 @@ export class MathHelper {
         MathHelper.boundBoxGet8Points(mins, maxs, pts); // 获得局部坐标系表示的AABB的8个顶点坐标
         const out: vec3 = new vec3(); // 变换后的顶点
         // 遍历局部坐标系的8个AABB包围盒的顶点坐标
-        for (let i: number = 0; i < pts.length; i++) {
+        pts.forEach((pt) => {
             // 将局部坐标表示的顶点变换到mat坐标空间中去，变换后的结果放在out变量中
-            // FIXME: mat.multiplyVec3(pts[i], out);
-            out.xyz = mat.multiplyVec3(pts[i]).xyz;
+            out.xyz = mat.multiplyVec3(pt).xyz;
             // 重新构造新的，与世界坐标系轴对称的AABB包围盒
             this.boundBoxAddPoint(out, mins, maxs);
-        }
+        });
     }
 
     /** 判断一个点是否在AABB包围盒内部，如果在则返回true，否则返回false */
@@ -343,10 +344,6 @@ export class MathHelper {
         }
         q.toMat4(dest);
         // 调用quat的toMat4方法，再放入平移部分数据
-        // FIXME:
-        // dest.values[12] = pos.x;
-        // dest.values[13] = pos.y;
-        // dest.values[14] = pos.z;
 
         dest.init([...dest.all().slice(0, 12), pos.x, pos.y, pos.z, dest.all()[15]]);
 

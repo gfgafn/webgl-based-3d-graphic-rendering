@@ -64,9 +64,7 @@ export class TypedArrayList<T extends Uint16Array | Float32Array | Uint8Array> {
     }
 
     pushArray(nums: number[]): void {
-        for (let i: number = 0; i < nums.length; i++) {
-            this.push(nums[i]);
-        }
+        nums.forEach((num) => this.push(num));
     }
 
     /** subarray方法不会重新创建并复制源类型数组中的ArrayBuffer数据 */

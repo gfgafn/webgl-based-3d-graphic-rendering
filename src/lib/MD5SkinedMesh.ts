@@ -46,9 +46,7 @@ export class MD5SkinedMesh {
         this._readMeshes(tokenizer, token, numMeshes);
 
         // 最后逐mesh更新顶点坐标
-        for (let i: number = 0; i < this.meshes.length; i++) {
-            this.updateMeshFinalPositions(i);
-        }
+        this.meshes.forEach((_mesh, i) => this.updateMeshFinalPositions(i));
     }
 
     private _readJoints(
@@ -250,8 +248,7 @@ export class MD5SkinedMesh {
         const mesh: MD5Mesh = this.meshes[meshIdx];
         // 获取参数所指向的MD5Mesh结构
         // 变量MD5Mesh中的所有顶点
-        for (let j: number = 0; j < mesh.vertices.length; j++) {
-            const vert: MD5Vertex = mesh.vertices[j];
+        mesh.vertices.forEach((vert) => {
             // 获取当前的MD5Vertex对象            // 遍历当前MD5Vertex中关联的所有权重对象
             for (let k: number = 0; k < vert.numWeight; k++) {
                 // 注意权重对象的寻址算法
@@ -267,7 +264,8 @@ export class MD5SkinedMesh {
                 // 将计算出来的向量add到finalPosInModelSpace中
                 vert.finalPosInModelSpace.add(vec3Adapter.v0);
             }
-        } // 遍历完所有的权重对象后得到最终位于模型坐标系的顶点坐标
+        });
+        // 遍历完所有的权重对象后得到最终位于模型坐标系的顶点坐标
     }
 
     async loadTextures(gl: WebGLRenderingContext): Promise<void> {
@@ -276,8 +274,9 @@ export class MD5SkinedMesh {
             // 创建字典对象
             const names: Dictionary<string> = new Dictionary<string>();
             const _promises: Promise<ImageInfo | null>[] = []; // 遍历所有MD5 Mesh对象集合
-            for (let i: number = 0; i < this.meshes.length; i++) {
-                const mesh: MD5Mesh = this.meshes[i]; // 查看names字典，该字典保存所有已经添加的材质名称，目的是防止重复加载纹理
+
+            this.meshes.forEach((mesh) => {
+                // 查看names字典，该字典保存所有已经添加的材质名称，目的是防止重复加载纹理
                 if (names.contains(mesh.material) === false) {
                     // 如果不存在名字，就添加该名字
                     names.insert(mesh.material, mesh.material); // 将Promise加入到_promises数组中
@@ -288,21 +287,21 @@ export class MD5SkinedMesh {
                         ),
                     );
                 }
-            }
+            });
             //console.log(names.Keys);
             // 添加完所有请求的Promise对象后，调用all静态方法
             Promise.all(_promises).then((images: (ImageInfo | null)[]) => {
                 console.log(images); // 加载完毕后，输出所有ImaeInfo对象，用于debug
                 // 遍历ImageInfo对象，加载图像数据，生成纹理对象
-                for (let i: number = 0; i < images.length; i++) {
-                    const img: ImageInfo | null = images[i];
+
+                images.forEach((img) => {
                     if (img) {
                         // 创建GLTexture对象
                         const tex: GLTexture = new GLTexture(gl, img.name);
                         tex.upload(img.image); // 加载图像数据
                         GLTextureCache.instance.set(img.name, tex); // 将成功生成的GLTexture对象存储到GLTextureCache容器中
                     }
-                }
+                });
                 resolve(); // 全部完成后，调用resolve回调，表示完成回调
             });
         });
@@ -324,10 +323,11 @@ export class MD5SkinedMesh {
             texBuilder.setTexture(tex);
         } else {
             texBuilder.setTexture(GLTextureCache.instance.getMust('default'));
-        } // 直接使用finalPosInModelSpace来绘制绑定姿态
+        }
+        // 直接使用finalPosInModelSpace来绘制绑定姿态
         texBuilder.begin();
-        for (let j: number = 0; j < mesh.indices.length; j++) {
-            const vert: MD5Vertex = verts[mesh.indices[j]];
+        mesh.indices.forEach((indic) => {
+            const vert: MD5Vertex = verts[indic];
             texBuilder
                 .texcoord(vert.uv.x, vert.uv.y)
                 .vertex(
@@ -335,7 +335,7 @@ export class MD5SkinedMesh {
                     vert.finalPosInModelSpace.y,
                     vert.finalPosInModelSpace.z,
                 );
-        }
+        });
         texBuilder.end(mvp);
     }
 
@@ -349,38 +349,36 @@ export class MD5SkinedMesh {
         const anim: MD5Anim = this.anims[idx];
         anim.buildLocalSkeleton(frameNum); // 合成pose的局部matrix
         anim.updateToModelSpaceSkeleton(); // 合成pose的Model Space matrix表示
-        for (let i: number = 0; i < anim.skeleton.poses.length; i++) {
-            const pose: Pose = anim.skeleton.poses[i];
+        anim.skeleton.poses.forEach((poes, i) =>
             // 继续合成pose的matrix矩阵
             // 此时pose.matrix的矩阵表示的是Model Space坐标系表示的MD5Vertex.finalPosInModelSpace顶点;
             // 变换到MD5Mesh中的bindpose的局部空间中，然后接着变换到当前pose的Model Space中
-            mat4.product(pose.matrix, this.joints[i].inverseBindPoseMatrix, pose.matrix);
-        }
+            mat4.product(poes.matrix, this.joints[i].inverseBindPoseMatrix, poes.matrix),
+        );
         // 遍历所有mesh
-        for (let i: number = 0; i < this.meshes.length; i++) {
-            const mesh: MD5Mesh = this.meshes[i]; // 获取当前mesh
-            for (let j: number = 0; j < mesh.vertices.length; j++) {
-                const vert: MD5Vertex = mesh.vertices[j]; // 获取当前的MD5Vertex
-                vert.animiatedPosInModelSpace.reset(); // 重用该坐标                // 遍历各个权重，合成最终的animatedPosInModelSpace的值
-                for (let k: number = 0; k < vert.numWeight; k++) {
-                    const weight: MD5Weight = mesh.weights[vert.firstWeight + k]; // 获取MD5Vertex关联的权重对象
-                    // 获取当前权重关联的pose的matrix，注意这个matrix在本方法上面的注释
-                    const bindPose: mat4 = anim.skeleton.poses[weight.jointId].matrix; // 将finalPosInModelSpace变换到Model Space
-                    // FIXME:  bindPose.multiplyVec3(vert.finalPosInModelSpace, vec3.zero);
-                    vec3Adapter.v0.xyz = bindPose.multiplyVec3(
-                        vert.finalPosInModelSpace,
-                    ).xyz;
-                    vec3Adapter.v0.scale(weight.jointWeight); // 缩放权重
-                    vert.animiatedPosInModelSpace.add(vec3Adapter.v0); // 添加当前权重到animiatedPosInModelSpace中
-                }
-            }
-        }
+        this.meshes.forEach((mesh) =>
+            mesh.vertices.forEach(
+                // 获取当前的MD5Vertex
+                (vert) => {
+                    vert.animiatedPosInModelSpace.reset(); // 重用该坐标                // 遍历各个权重，合成最终的animatedPosInModelSpace的值
+                    for (let k: number = 0; k < vert.numWeight; k++) {
+                        const weight: MD5Weight = mesh.weights[vert.firstWeight + k]; // 获取MD5Vertex关联的权重对象
+                        // 获取当前权重关联的pose的matrix，注意这个matrix在本方法上面的注释
+                        const bindPose: mat4 = anim.skeleton.poses[weight.jointId].matrix; // 将finalPosInModelSpace变换到Model Space
+                        // FIXME:  bindPose.multiplyVec3(vert.finalPosInModelSpace, vec3.zero);
+                        vec3Adapter.v0.xyz = bindPose.multiplyVec3(
+                            vert.finalPosInModelSpace,
+                        ).xyz;
+                        vec3Adapter.v0.scale(weight.jointWeight); // 缩放权重
+                        vert.animiatedPosInModelSpace.add(vec3Adapter.v0); // 添加当前权重到animiatedPosInModelSpace中
+                    }
+                },
+            ),
+        );
     }
 
     drawAnimPose(texBuilder: GLMeshBuilder, mvp: mat4): void {
-        for (let i: number = 0; i < this.meshes.length; i++) {
-            this._drawAnimMesh(i, texBuilder, mvp);
-        }
+        this.meshes.forEach((_mesh, i) => this._drawAnimMesh(i, texBuilder, mvp));
     }
 
     private _drawAnimMesh(meshIdx: number, texBuilder: GLMeshBuilder, mvp: mat4): void {
@@ -395,16 +393,15 @@ export class MD5SkinedMesh {
             texBuilder.setTexture(GLTextureCache.instance.getMust('default'));
         }
         texBuilder.begin();
-        for (let j: number = 0; j < mesh.indices.length; j++) {
-            const vert: MD5Vertex = verts[mesh.indices[j]];
+        mesh.indices.forEach((indic) =>
             texBuilder
-                .texcoord(vert.uv.x, vert.uv.y)
+                .texcoord(verts[indic].uv.x, verts[indic].uv.y)
                 .vertex(
-                    vert.animiatedPosInModelSpace.x,
-                    vert.animiatedPosInModelSpace.y,
-                    vert.animiatedPosInModelSpace.z,
-                );
-        }
+                    verts[indic].animiatedPosInModelSpace.x,
+                    verts[indic].animiatedPosInModelSpace.y,
+                    verts[indic].animiatedPosInModelSpace.z,
+                ),
+        );
         texBuilder.end(mvp);
     }
 }

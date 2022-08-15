@@ -1,12 +1,10 @@
 import { mat4, vec3 } from '@tlaukkan/tsm';
 import { Application } from '../common/Application';
-// import { mat4, vec3 } from '../common/math/TSM';
-import { MathHelper } from '../common/math/MathHelper';
-// import { GLHelper, EShaderType, GLUniformMap, GLAttribMap } from '../webgl/WebGLHepler';
 import { TypedArrayList } from '../common/container/TypedArrayList';
+import { MathHelper } from '../common/math/MathHelper';
+import { mat4Adapter } from '../common/math/tsmAdapter';
 import { GLCoordSystem } from '../webgl/WebGLCoordSystem';
 import { EShaderType, GLAttribMap, GLHelper, GLUniformMap } from '../webgl/WebGLHelper';
-import { mat4Adapter } from '../common/math/tsmAdapter';
 
 export class BasicWebGLApplication extends Application {
     gl: WebGLRenderingContext;
@@ -32,14 +30,13 @@ export class BasicWebGLApplication extends Application {
 
         // 4、 顶点处理入口main函数
         void main(void){
-            // 5、 gl_Position为Vertex Shader内置varying变量，varying变量会被传递到Fragment Shader中去
+            // 5、 gl_Position为Vertex Shader内置varying变量, varying变量会被传递到Fragment Shader中去
             gl_Position = uMVPMatrix * vec4(aPosition,1.0); // 6、 将坐标值从局部坐标系变换到裁剪坐标系
             vColor = aColor; // 7、 将颜色属性传递到Fragment Shader中去
         }
         `;
 
     colorShader_fs: string = `
-
         #ifdef GL_ES
             precision highp float;
         #endif
@@ -83,6 +80,7 @@ export class BasicWebGLApplication extends Application {
     verts: TypedArrayList<Float32Array>; // 使用第二章中实现的动态类型数组，我们会重用该数组
 
     // BasicWebGLApplication增加EBO
+    /** `gl.ELENENT_ARRAY_BUFFER`类型的顶点Buffer对象 */
     evbo: WebGLBuffer; // e表示gl.ELEMENT_ARRAY_BUFFER
     indices: TypedArrayList<Uint16Array>; // 索引缓存的数据
 
@@ -101,6 +99,8 @@ export class BasicWebGLApplication extends Application {
 
             // 帧缓冲区抗锯齿以及是否保留上一帧的内容
             antialias: true, //设置抗锯齿为true，如果硬件支持，会使用抗锯齿功能，default为true
+            // 如果将preserveDrawingBuffer设置为false（默认），那么WebGL渲染完一帧后，会在下一帧渲染之前自动清屏
+            // （在覆写基类render方式时，不需要调用WebGLRendering Context的clear方法来清理各个帧缓存的数据）
             preserveDrawingBuffer: false, // 参看第五章5.2.1节说明
         };
 
@@ -117,7 +117,7 @@ export class BasicWebGLApplication extends Application {
 
         canvas.addEventListener(
             'webglcontextlost',
-            function (e) {
+            (e) => {
                 console.log(JSON.stringify(e)); // 当触发webglcontextlost事件时，将该事件相关信息打印到控制台
             },
             false,
@@ -129,27 +129,15 @@ export class BasicWebGLApplication extends Application {
 
         // 在构造函数中增加如下代码:
         // 构造投影矩阵
-        // this.projectMatrix = mat4.perspective(
-        //     // FIXME: MathHelper.toRadian(45),
-        //     0.5 * 360 * MathHelper.toRadian(45),
-        //     this.canvas.width / this.canvas.height,
-        //     0.1,
-        //     100,
-        // );
-
         this.projectMatrix = mat4Adapter.perspective(
             MathHelper.toRadian(45),
             this.canvas.width / this.canvas.height,
             0.1,
             100,
         );
-
         // 构造视矩阵
         this.viewMatrix = mat4.lookAt(new vec3([0, 0, 5]), new vec3());
         // 构造viewprojectMatrix
-        // FIXME
-        // this.viewProjectMatrix = mat4.product(this.projectMatrix, this.viewMatrix);
-
         this.viewProjectMatrix = new mat4().setIdentity();
         this.viewProjectMatrix = mat4.product(
             this.projectMatrix,
@@ -218,8 +206,8 @@ export class BasicWebGLApplication extends Application {
         const coords: GLCoordSystem[] = [];
         const w: number = this.canvas.width / num;
         const h: number = this.canvas.height / num;
-        for (let i: number = 0; i < num; i++) {
-            for (let j: number = 0; j < num; j++) {
+        for (let i = 0; i < num; i++) {
+            for (let j = 0; j < num; j++) {
                 coords.push(new GLCoordSystem([i * w, j * h, w, h]));
             }
         }
@@ -274,9 +262,10 @@ export class BasicWebGLApplication extends Application {
 
     render(): void {
         this.render9Viewports();
-        //this.render4Viewports();
+        // this.render4Viewports();
     }
 
+    /** 使用交错布局和顶点缓存绘制四边形 */
     drawRectByInterleavedVBO(
         first: number,
         count: number,
@@ -290,111 +279,27 @@ export class BasicWebGLApplication extends Application {
         if (mode === this.gl.TRIANGLES) {
             data = [
                 // 三角形0
-                -0.5,
-                -0.5,
-                0,
-                1,
-                0,
-                0,
-                1, // 左下  0
-                0.5,
-                -0.5,
-                0,
-                0,
-                1,
-                0,
-                1, // 右下  1
-                0.5,
-                0.5,
-                0,
-                0,
-                0,
-                1,
-                0, // 右上  2
+                ...[-0.5, -0.5, 0, 1, 0, 0, 1], // 左下  0
+                ...[0.5, -0.5, 0, 0, 1, 0, 1], // 右下  1
+                ...[0.5, 0.5, 0, 0, 0, 1, 0], // 右上  2
                 // 三角形1
-                0.5,
-                0.5,
-                0,
-                0,
-                0,
-                1,
-                0, // 右上  2
-                -0.5,
-                0.5,
-                0,
-                0,
-                1,
-                0,
-                1, // 左上  4
-                -0.5,
-                -0.5,
-                0,
-                1,
-                0,
-                0,
-                1, // 左下  0
+                ...[0.5, 0.5, 0, 0, 0, 1, 0], // 右上  2
+                ...[-0.5, 0.5, 0, 0, 1, 0, 1], // 左上  4
+                ...[-0.5, -0.5, 0, 1, 0, 0, 1], // 左下  0
             ];
         } else if (mode === this.gl.TRIANGLE_STRIP) {
             data = [
-                -0.5,
-                0.5,
-                0,
-                0,
-                1,
-                0,
-                1, // 左上 0
-                -0.5,
-                -0.5,
-                0,
-                1,
-                0,
-                0,
-                1, // 左下 1
-                0.5,
-                0.5,
-                0,
-                0,
-                0,
-                1,
-                0, // 右上 2
-                0.5,
-                -0.5,
-                0,
-                0,
-                1,
-                0,
-                1, // 右下 3
+                ...[-0.5, 0.5, 0, 0, 1, 0, 1], // 左上 0
+                ...[-0.5, -0.5, 0, 1, 0, 0, 1], // 左下 1
+                ...[0.5, 0.5, 0, 0, 0, 1, 0], // 右上 2
+                ...[0.5, -0.5, 0, 0, 1, 0, 1], // 右下 3
             ];
         } else {
             data = [
-                -0.5,
-                -0.5,
-                0,
-                1,
-                0,
-                0,
-                1, // 左下 0
-                0.5,
-                -0.5,
-                0,
-                0,
-                1,
-                0,
-                1, // 右下 1
-                0.5,
-                0.5,
-                0,
-                0,
-                0,
-                1,
-                0, // 右上 2
-                -0.5,
-                0.5,
-                0,
-                0,
-                1,
-                0,
-                1, // 左上 3
+                ...[-0.5, -0.5, 0, 1, 0, 0, 1], // 左下 0
+                ...[0.5, -0.5, 0, 0, 1, 0, 1], // 右下 1
+                ...[0.5, 0.5, 0, 0, 0, 1, 0], // 右上 2
+                ...[-0.5, 0.5, 0, 0, 1, 0, 1], // 左上 3
             ];
         }
 
@@ -423,7 +328,7 @@ export class BasicWebGLApplication extends Application {
             this.gl.FLOAT,
             false,
             Float32Array.BYTES_PER_ELEMENT * 7,
-            0,
+            Float32Array.BYTES_PER_ELEMENT * 0,
         );
         this.gl.vertexAttribPointer(
             this.attribMap['aColor'].location,
@@ -431,7 +336,7 @@ export class BasicWebGLApplication extends Application {
             this.gl.FLOAT,
             false,
             Float32Array.BYTES_PER_ELEMENT * 7,
-            12,
+            Float32Array.BYTES_PER_ELEMENT * 3,
         );
 
         // 默认情况下，是关闭vertexAttrbArray对象的，因此需要开启
@@ -448,13 +353,10 @@ export class BasicWebGLApplication extends Application {
         this.gl.uniformMatrix4fv(
             this.uniformMap['uMVPMatrix'].location,
             false,
-            // FIXME 无法使用 mat.all() 代替 mat.values
             mat.all(),
         );
         // 调用drawArrays对象
-
         this.gl.drawArrays(mode, first, count); // 几个顶点
-
         // 将渲染状态恢复的未设置之前
         this.gl.useProgram(null);
         this.gl.disableVertexAttribArray(this.attribMap['aPosition'].location);
@@ -462,6 +364,13 @@ export class BasicWebGLApplication extends Application {
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
     }
 
+    /**
+     * 使用交错布局和顶点缓存与索引缓存绘制四边形
+     * @param byteOffset 指定元素数组缓冲区中的偏移量。必须是给定类型大小的有效倍数。
+     * @param count 指定要渲染的元素数量。
+     * @param mode 指定要渲染的图元类型。
+     * @param isCCW
+     */
     drawRectByInterleavedVBOWithEBO(
         byteOffset: number,
         count: number,
@@ -473,34 +382,10 @@ export class BasicWebGLApplication extends Application {
         // 声明interleaved存储的顶点数组。
         // 逆时针顺序声明不重复的顶点属性相关数据
         this.verts.pushArray([
-            -0.5,
-            -0.5,
-            0,
-            1,
-            0,
-            0,
-            1, // 左下 0
-            0.5,
-            -0.5,
-            0,
-            0,
-            1,
-            0,
-            1, // 右下 1
-            0.5,
-            0.5,
-            0,
-            0,
-            0,
-            1,
-            0, // 右上 2
-            -0.5,
-            0.5,
-            0,
-            0,
-            1,
-            0,
-            1, // 左上 3
+            ...[-0.5, -0.5, 0, 1, 0, 0, 1], // 左下 0
+            ...[0.5, -0.5, 0, 0, 1, 0, 1], // 右下 1
+            ...[0.5, 0.5, 0, 0, 0, 1, 0], // 右上 2
+            ...[-0.5, 0.5, 0, 0, 1, 0, 1], // 左上 3
         ]);
         // 清空索引类型数组
         this.indices.clear();
@@ -532,7 +417,7 @@ export class BasicWebGLApplication extends Application {
             this.gl.FLOAT,
             false,
             Float32Array.BYTES_PER_ELEMENT * 7,
-            0,
+            Float32Array.BYTES_PER_ELEMENT * 0,
         );
         this.gl.vertexAttribPointer(
             this.attribMap['aColor'].location,
@@ -540,7 +425,7 @@ export class BasicWebGLApplication extends Application {
             this.gl.FLOAT,
             false,
             Float32Array.BYTES_PER_ELEMENT * 7,
-            12,
+            Float32Array.BYTES_PER_ELEMENT * 3,
         );
 
         this.gl.enableVertexAttribArray(this.attribMap['aPosition'].location);
@@ -560,7 +445,6 @@ export class BasicWebGLApplication extends Application {
         this.gl.uniformMatrix4fv(
             this.uniformMap['uMVPMatrix'].location,
             false,
-            // FIXME 无法使用 mat.all() 代替 mat.values
             mat.all(),
         );
 

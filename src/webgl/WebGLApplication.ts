@@ -11,7 +11,7 @@ import { GLTextureCache } from './WebGLTextureCache';
 export class WebGLApplication extends Application {
     // 可以直接操作WebGL相关内容
     gl: WebGLRenderingContext;
-    /** 模拟OpenGL1.1中的矩阵堆栈, 封装在GLWorldMatrixStack类中 */
+    /** 模拟 `OpenGL1.1` 中的矩阵堆栈, 封装在 `GLWorldMatrixStack` 类中 */
     matStack: GLWorldMatrixStack;
     /** 模拟OpenGL1.1中的立即绘制模式, 封装在GLMeshBuilder类中 */
     builder: GLMeshBuilder;
@@ -92,18 +92,6 @@ export class WebGLApplication extends Application {
             GLAttribState.POSITION_BIT | GLAttribState.COLOR_BIT,
             GLProgramCache.instance.getMust('color'),
         );
-
-        // // 在WebGLApplication类的构造函数的最后，创建颜色和纹理Program
-        // GLProgramCache.instance.set(
-        //     'color',
-        //     GLProgram.createDefaultColorProgram(this.gl),
-        // );
-        // GLProgramCache.instance.set(
-        //     'texture',
-        //     GLProgram.createDefaultTextureProgram(this.gl),
-        // );
-
-        // GLHelper.setDefaultState(this.gl);
     }
 
     static getMaxVertexAttribs(gl: WebGLRenderingContext): number {

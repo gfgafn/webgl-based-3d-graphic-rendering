@@ -8,6 +8,7 @@ export enum EMatrixMode {
     TEXTURE,
 }
 
+/** 实现 `OpenGL 1.x` 中矩阵堆栈的相关功能 */
 export class GLMatrixStack {
     private _mvStack: mat4[];
     private _projStack: mat4[];
@@ -52,10 +53,8 @@ export class GLMatrixStack {
     get normalMatrix(): mat4 {
         const ret: mat4 = new mat4();
         this.modelViewMatrix.copy(ret);
-        // FIXME:
-        // this.modelViewMatrix.inverse(ret);
 
-        // mat4Instance.inverse() 会修改自身
+        // mat4Instance.inverse() 会修改自身!!!
         if (!ret.inverse()) throw new Error('can not solve `ret.inverse()` ');
         ret.transpose();
         return ret;
@@ -146,13 +145,6 @@ export class GLMatrixStack {
         if (isRadians == false) {
             fov = MathHelper.toRadian(fov);
         }
-        // const mat: mat4 = mat4.perspective(
-        //     // FIXME: fov,
-        //     0.5 * 360 * fov,
-        //     aspect,
-        //     near,
-        //     far,
-        // );
 
         const mat: mat4 = mat4Adapter.perspective(fov, aspect, near, far);
 
@@ -220,26 +212,6 @@ export class GLMatrixStack {
         const z: number = -vec3.dot(zAxis, pos);
 
         const mat: mat4 = this._mvStack[this._mvStack.length - 1];
-        // FIXME：
-        // mat.values[0] = xAxis.x;
-        // mat.values[1] = yAxis.x;
-        // mat.values[2] = zAxis.x;
-        // mat.values[3] = 0.0;
-
-        // mat.values[4] = xAxis.y;
-        // mat.values[5] = yAxis.y;
-        // mat.values[6] = zAxis.y;
-        // mat.values[7] = 0.0;
-
-        // mat.values[8] = xAxis.z;
-        // mat.values[9] = yAxis.z;
-        // mat.values[10] = zAxis.z;
-        // mat.values[11] = 0.0;
-
-        // mat.values[12] = x;
-        // mat.values[13] = y;
-        // mat.values[14] = z;
-        // mat.values[15] = 1.0;
 
         mat.init([
             ...[xAxis.x, yAxis.x, zAxis.x, 0.0],
@@ -315,7 +287,7 @@ export class GLMatrixStack {
     }
 }
 
-/** 该类用于将局部坐标系表示的顶点变换到世界坐标系 */
+/** 该类用于将**局部坐标系**表示的顶点变换到**世界坐标系**, 以`mat4`矩阵为栈中的元素 */
 export class GLWorldMatrixStack {
     /** 内置一个矩阵数组 */
     private _worldMatrixStack: mat4[];
@@ -366,9 +338,8 @@ export class GLWorldMatrixStack {
         return this; // 返回this，可用于链式操作
     }
 
-    // FIXME: multiMatrix
     /** 栈顶矩阵 = 栈顶矩阵 ＊ 参数矩阵mat */
-    multMatrix(mat: mat4): GLWorldMatrixStack {
+    multiMatrix(mat: mat4): GLWorldMatrixStack {
         this.worldMatrix.multiply(mat);
         return this; // 返回this，可用于链式操作
     }

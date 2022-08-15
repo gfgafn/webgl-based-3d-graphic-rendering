@@ -1,14 +1,169 @@
 import { vec2 } from '@tlaukkan/tsm';
 
+/** 输入事件类型枚举 */
+export enum EInputEventType {
+    /** 总类，表示鼠标事件 */
+    MOUSEEVENT,
+    /** 鼠标按下事件 */
+    MOUSEDOWN,
+    /** 鼠标弹起事件 */
+    MOUSEUP,
+    /** 鼠标移动事件 */
+    MOUSEMOVE,
+    /** 鼠标拖动事件 */
+    MOUSEDRAG,
+    /** 总类，表示键盘事件 */
+    KEYBOARDEVENT,
+    /** 键按下事件 */
+    KEYUP,
+    /** 键弹起事件 */
+    KEYDOWN,
+    /** 按键事件 */
+    KEYPRESS,
+}
+
+/**
+ * `canvas` 输入事件类。
+ * `CanvasKeyboardEvent` 和 `CanvasMouseEvent` 都继承自本类
+ * 基类定义了共同的属性，`keyboard` 或 `mouse` 事件都能使用组合键。
+ * 例如，可以按 `Ctrl` 键的同时点击鼠标左键做某些事情
+ * 当然也可以按着 `Alt +A` 键做另外一些事情
+ * @property {boolean} altKey 指示 `alt` 键是否被按下
+ * @property {boolean} ctrlKey 指示 `ctrl` 键是否被按下
+ * @property {boolean} shiftKey 指示 `shift` 键是否被按下
+ * @property {EInputEventType} type 当前事件的类型
+ */
+export class CanvasInputEvent {
+    /** 指示 `alt` 键是否被按下 */
+    altKey: boolean;
+    /** 指示 `ctrl` 键是否被按下 */
+    ctrlKey: boolean;
+    /** 指示 `shift` 键是否被按下 */
+    shiftKey: boolean;
+    /** 当前事件的类型 */
+    type: EInputEventType;
+
+    /** 构造函数，初始化时3个组合键都默认是 `false` 状态 */
+    constructor(
+        altKey: boolean = false,
+        ctrlKey: boolean = false,
+        shiftKey: boolean = false,
+        type: EInputEventType = EInputEventType.MOUSEEVENT,
+    ) {
+        this.altKey = altKey;
+        this.ctrlKey = ctrlKey;
+        this.shiftKey = shiftKey;
+        this.type = type;
+    }
+}
+
+/**
+ * 自定义 canvas 鼠标输入事件
+ * @extends CanvasInputEvent
+ * @property {number} button 表示当前按下鼠标哪个键, [ `0`：鼠标左键，`1`：鼠标中键，`2`：鼠标右键]
+ * @property {vec2} canvasPosition 基于canvas坐标系的表示
+ */
+export class CanvasMouseEvent extends CanvasInputEvent {
+    /** 表示当前按下鼠标哪个键, [ `0` ：鼠标左键，`1` ：鼠标中键，`2` ：鼠标右键] */
+    button: number;
+    /** 基于canvas坐标系的表示 */
+    canvasPosition: vec2;
+
+    constructor(
+        type: EInputEventType,
+        canvasPos: vec2,
+        button: number,
+        altKey: boolean = false,
+        ctrlKey: boolean = false,
+        shiftKey: boolean = false,
+    ) {
+        super(altKey, ctrlKey, shiftKey, type);
+        this.canvasPosition = canvasPos;
+        this.button = button;
+        console.log(`鼠标键 button ${this.button}`);
+    }
+}
+
+/**
+ * 自定义 canvas 键盘输入事件
+ * @extends CanvasInputEvent
+ */
+export class CanvasKeyBoardEvent extends CanvasInputEvent {
+    /** 当前按下的键的 `ascii字符` */
+    key: string;
+    /** 当前按下的键的 `ascii码(数字)` */
+    keyCode: number;
+    /** 当前按下的键是否不停的触发事件 */
+    repeat: boolean;
+
+    constructor(
+        type: EInputEventType,
+        key: string,
+        keyCode: number,
+        repeat: boolean,
+        altKey: boolean = false,
+        ctrlKey: boolean = false,
+        shiftKey: boolean = false,
+    ) {
+        super(altKey, ctrlKey, shiftKey, type);
+        this.key = key;
+        this.keyCode = keyCode;
+        this.repeat = repeat;
+    }
+}
+
+/** 定时器回调函数类型别名，需要第三方实现和设置 */
+export type TimerCallback = (id: number, data: unknown) => void;
+
+/**
+ * 定时器类
+ * @property {number} id 定时器的id号
+ * @property {boolean} enabled 标记当前定时器是否有效
+ * @property {TimerCallback} callback 定时器回调函数，到时间会自动调用
+ * @property {any} callbackData 用作回调函数的参数
+ * @property {number} countdown 倒计时定时器，每次 `update` 时会倒计时
+ * @property {number} timeout 重复触发定时器的时间间隔
+ * @property {number} onlyOnce 是否重复触发定时器
+ */
+class Timer {
+    /** 定时器的id号 */
+    id: number = -1;
+    /** 标记当前定时器是否有效 */
+    enabled: boolean = false;
+    /** 回调函数，到时间会自动调用 */
+    callback: TimerCallback;
+    /** 用作回调函数的参数 */
+    callbackData: unknown = undefined;
+    /** 倒计时定时器，每次 `update` 时会倒计时 */
+    countdown: number = 0;
+    /** 重复触发定时器的时间间隔 */
+    timeout: number = 0;
+    /** 是否重复触发定时器 */
+    onlyOnce: boolean = false;
+
+    /**
+     * 定时器类构造函数
+     * @param {TimerCallback} callback 回调函数，到时间会自动调用
+     */
+    constructor(callback: TimerCallback) {
+        this.callback = callback;
+    }
+}
+
 /** `Application`基类，主要功能为更新、重绘、事件的分发或处理 */
 export class Application implements EventListenerObject {
     timers: Timer[] = [];
 
-    // TODO:修改私有字段为 #timeId
     private _timeId: number = -1;
 
     private _fps: number = 0;
 
+    /** 计算当前的FPS（Frame Per Second） */
+    get fps() {
+        return this._fps;
+    }
+
+    /** 指示如何计算Y轴的坐标 */
     isFlipYCoord: boolean = false;
 
     // 我们的Application主要是canvas2D和webGL应用
@@ -37,6 +192,9 @@ export class Application implements EventListenerObject {
     protected _lastTime!: number;
     /** 用于计算当前更新与上一次更新之间的时间差, 用于基于时间的物理更新 */
     protected _startTime!: number;
+
+    /** 每帧间回调函数, 下一次重绘之前更新动画帧所调用的函数 */
+    frameCallback: ((app: Application) => void) | null;
 
     constructor(canvas: HTMLCanvasElement) {
         // Application基类拥有一个HTMLCanvasElement对象
@@ -91,18 +249,12 @@ export class Application implements EventListenerObject {
         return this._start;
     }
 
-    /** 计算当前的FPS（Frame Per Second） */
-    get fps() {
-        return this._fps;
-    }
     /** 停止动画循环 */
     stop(): void {
         if (this._start) {
-            //alert(this._requestId);
-            /**
-             * `cancelAnimationFrame` 函数用于
-             * 取消一个先前通过调用 `window.requestAnimationFrame()` 方法添加到计划中的动画帧请求
-             */
+            // alert(this._requestId);
+            //`cancelAnimationFrame` 函数用于
+            //取消一个先前通过调用 `window.requestAnimationFrame()` 方法添加到计划中的动画帧请求
             window.cancelAnimationFrame(this._requestId);
             this._requestId = -1; // 将_requestId设置为-1
             // 在start和stop函数中，_lastTime和_startTime都设置为-1
@@ -111,9 +263,6 @@ export class Application implements EventListenerObject {
             this._start = false;
         }
     }
-
-    /** 每帧间回调函数, 下一次重绘之前更新动画帧所调用的函数 */
-    frameCallback: ((app: Application) => void) | null;
 
     /** 子类能覆写（override），用于渲染 */
     render(): void {
@@ -126,7 +275,10 @@ export class Application implements EventListenerObject {
         void elapsedMsec, intervalSec;
     }
 
-    /** 不停地周而复始运动，不间断地刷新 */
+    /**
+     * 不停地周而复始运动，不间断地刷新。
+     * 将不间断地刷新分解为4个流程：计算帧率（FPS）、更新（update）、render（重绘）及按需逐帧回调（frameCallback）
+     */
     protected step(timeStamp: DOMHighResTimeStamp): void {
         //第一次调用本函数时，设置start和lastTime为timestamp
         if (this._startTime === -1) this._startTime = timeStamp;
@@ -209,17 +361,17 @@ export class Application implements EventListenerObject {
         }
     }
 
-    // 将鼠标事件发生时鼠标指针的位置变换为相对当前canvas元素的偏移表示
-    // 这是一个受保护方法，意味着只能在本类或其子类才能使用，其他类都无法调用本方法
-    // 之所以设计为受保护的方法，是为了让子类能够覆写（override）本方法
-    // 因为本方法实现时不考虑CSS盒模型对鼠标坐标系变换的影响，如果你要支持更完善的变换
-    // 则可以让子类覆写（override）本方法
-    // 只要是鼠标事件（down / up / move / drag .....）都需要调用本方法
-    // 将相对于浏览器viewport表示的点变换到相对于canvas表示的点
+    /**
+     * 将鼠标事件发生时鼠标指针的位置变换为相对当前 `canvas` 元素的偏移表示。
+     * 这是一个受保护方法，意味着只能在本类或其子类才能使用，其他类都无法调用本方法。
+     * 之所以设计为受保护的方法，是为了让子类能够覆写（override）本方法。
+     * 因为本方法实现时不考虑CSS盒模型对鼠标坐标系变换的影响，如果你要支持更完善的变换。
+     * 则可以让子类覆写（override）本方法。
+     * 只要是鼠标事件（ `down / up / move / drag ...` ）都需要调用本方法。
+     * 将相对于浏览器viewport表示的点变换到相对于canvas表示的点。
+     */
     protected viewportToCanvasCoordinate(evt: MouseEvent): vec2 {
         // 切记，很重要一点：
-        // getBoundingClientRect方法返回的ClientRect
-        // FIXME: 修改为 this.canvas
         const rect: DOMRect = this.canvas.getBoundingClientRect();
         // 获取触发鼠标事件的target元素，这里总是HTMLCanvasElement
         if (evt.target) {
@@ -341,14 +493,20 @@ export class Application implements EventListenerObject {
     // 这样让内存使用量和析构达到相对平衡状态
     // 每次添加一个定时器时，先查看timers列表中是否有没有使用的Timer，如有的话，返回该 `Timer` 的id号
     // 如果没有可用的timer，就重新创建一个Timer，并设置其id号及其他属性
+    /**
+     * 添加定时器
+     * @param callback 回调函数，到时间会自动调用
+     * @param timeout 重复触发定时器的时间间隔
+     * @param onlyOnce 是否重复触发定时器
+     * @param data `callback` 被调用时要传入的参数
+     * @returns
+     */
     addTimer(
         callback: TimerCallback,
         timeout: number = 1.0,
         onlyOnce: boolean = false,
         data: unknown = undefined,
     ): number {
-        // let timer: Timer;
-
         for (let i = 0; i < this.timers.length; i++) {
             const timer: Timer = this.timers[i];
             if (timer.enabled === false) {
@@ -454,155 +612,5 @@ export class Application implements EventListenerObject {
     protected onKeyPress(evt: CanvasKeyBoardEvent): void {
         void evt;
         return;
-    }
-}
-
-/** 输入事件类型枚举 */
-export enum EInputEventType {
-    /** 总类，表示鼠标事件 */
-    MOUSEEVENT,
-    /** 鼠标按下事件 */
-    MOUSEDOWN,
-    /** 鼠标弹起事件 */
-    MOUSEUP,
-    /** 鼠标移动事件 */
-    MOUSEMOVE,
-    /** 鼠标拖动事件 */
-    MOUSEDRAG,
-    /** 总类，表示键盘事件 */
-    KEYBOARDEVENT,
-    /** 键按下事件 */
-    KEYUP,
-    /** 键弹起事件 */
-    KEYDOWN,
-    /** 按键事件 */
-    KEYPRESS,
-}
-
-// CanvasKeyboardEvent和CanvasMouseEvent都继承自本类
-// 基类定义了共同的属性，keyboard或mouse事件都能使用组合键
-// 例如，可以按Ctrl键的同时点击鼠标左键做某些事情
-// 当然也可以按着Alt +A键做另外一些事情
-/**
- * canvas 输入事件类
- * @property {boolean} altKey 指示 `alt` 键是否被按下
- * @property {boolean} ctrlKey 指示 `ctrl` 键是否被按下
- * @property {boolean} shiftKey 指示 `shift` 键是否被按下
- * @property {EInputEventType} type 当前事件的类型
- */
-export class CanvasInputEvent {
-    /** 指示 `alt` 键是否被按下 */
-    altKey: boolean;
-    /** 指示 `ctrl` 键是否被按下 */
-    ctrlKey: boolean;
-    /** 指示 `shift` 键是否被按下 */
-    shiftKey: boolean;
-    /** 当前事件的类型 */
-    type: EInputEventType;
-
-    /** 构造函数，初始化时3个组合键都默认是 `false` 状态 */
-    constructor(
-        altKey: boolean = false,
-        ctrlKey: boolean = false,
-        shiftKey: boolean = false,
-        type: EInputEventType = EInputEventType.MOUSEEVENT,
-    ) {
-        this.altKey = altKey;
-        this.ctrlKey = ctrlKey;
-        this.shiftKey = shiftKey;
-        this.type = type;
-    }
-}
-
-/**
- * 自定义 canvas 鼠标输入事件
- * @extends CanvasInputEvent
- * @property {number} button 表示当前按下鼠标哪个键, [ `0`：鼠标左键，`1`：鼠标中键，`2`：鼠标右键]
- * @property {vec2} canvasPosition 基于canvas坐标系的表示
- */
-export class CanvasMouseEvent extends CanvasInputEvent {
-    /** 表示当前按下鼠标哪个键, [ `0` ：鼠标左键，`1` ：鼠标中键，`2` ：鼠标右键] */
-    button: number;
-    /** 基于canvas坐标系的表示 */
-    canvasPosition: vec2;
-
-    constructor(
-        type: EInputEventType,
-        canvasPos: vec2,
-        button: number,
-        altKey: boolean = false,
-        ctrlKey: boolean = false,
-        shiftKey: boolean = false,
-    ) {
-        super(altKey, ctrlKey, shiftKey, type);
-        this.canvasPosition = canvasPos;
-        this.button = button;
-        console.log(`鼠标键 button ${this.button}`);
-    }
-}
-
-/**
- * 自定义 canvas 键盘输入事件
- * @extends CanvasInputEvent
- */
-export class CanvasKeyBoardEvent extends CanvasInputEvent {
-    /** 当前按下的键的 `ascii字符` */
-    key: string;
-    /** 当前按下的键的 `ascii码(数字)` */
-    keyCode: number;
-    /** 当前按下的键是否不停的触发事件 */
-    repeat: boolean;
-
-    constructor(
-        type: EInputEventType,
-        key: string,
-        keyCode: number,
-        repeat: boolean,
-        altKey: boolean = false,
-        ctrlKey: boolean = false,
-        shiftKey: boolean = false,
-    ) {
-        super(altKey, ctrlKey, shiftKey, type);
-        this.key = key;
-        this.keyCode = keyCode;
-        this.repeat = repeat;
-    }
-}
-
-/** 定时器回调函数类型别名，需要第三方实现和设置 */
-export type TimerCallback = (id: number, data: unknown) => void;
-
-/**
- * 定时器类
- * @property {number} id 定时器的id号
- * @property {boolean} enabled 标记当前定时器是否有效
- * @property {TimerCallback} callback 定时器回调函数，到时间会自动调用
- * @property {any} callbackData 用作回调函数的参数
- * @property {number} countdown 倒计时定时器，每次 `update` 时会倒计时
- * @property {number} timeout 重复触发定时器的时间间隔
- * @property {number} onlyOnce 是否重复触发定时器
- */
-class Timer {
-    /** 定时器的id号 */
-    id: number = -1;
-    /** 标记当前定时器是否有效 */
-    enabled: boolean = false;
-    /** 回调函数，到时间会自动调用 */
-    callback: TimerCallback;
-    /** 用作回调函数的参数 */
-    callbackData: unknown = undefined;
-    /** 倒计时定时器，每次 `update` 时会倒计时 */
-    countdown: number = 0;
-    /** 重复触发定时器的时间间隔 */
-    timeout: number = 0;
-    /** 是否重复触发定时器 */
-    onlyOnce: boolean = false;
-
-    /**
-     * 定时器类构造函数
-     * @param {TimerCallback} callback 回调函数，到时间会自动调用
-     */
-    constructor(callback: TimerCallback) {
-        this.callback = callback;
     }
 }

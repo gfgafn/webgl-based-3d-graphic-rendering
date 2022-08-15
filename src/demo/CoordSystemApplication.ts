@@ -1,10 +1,10 @@
 import { mat4, vec3, vec4 } from '@tlaukkan/tsm';
 import { CanvasKeyBoardEvent } from '../common/Application';
-import { CoordSystem, DrawHelper } from '../lib/DrawHelper';
 import { EAxisType, MathHelper } from '../common/math/MathHelper';
-import { CameraApplication } from '../lib/CameraApplication';
-import { GLCoordSystem } from '../webgl/WebGLCoordSystem';
 import { vec4Adapter } from '../common/math/tsmAdapter';
+import { CameraApplication } from '../lib/CameraApplication';
+import { CoordSystem, DrawHelper } from '../lib/DrawHelper';
+import { GLCoordSystem } from '../webgl/WebGLCoordSystem';
 
 export class CoordSystemApplication extends CameraApplication {
     // 存储当前使用的坐标系、视口以及旋转轴、旋转角度等信息的数组
@@ -58,19 +58,18 @@ export class CoordSystemApplication extends CameraApplication {
         this.isD3dMode = false;
     }
 
+    /** @override */
     update(elapsedMsec: number, intervalSec: number): void {
         // s = vt，根据两帧间隔更新角速度和角位移
-        for (let i: number = 0; i < this.coordSystems.length; i++) {
-            const s: CoordSystem = this.coordSystems[i];
-            s.angle += this.speed;
-        }
+        this.coordSystems.forEach((s: CoordSystem) => (s.angle += this.speed));
         // 我们在CameraApplication中也覆写（override）的update方法
         // CameraApplication的update方法用来计算摄像机的投影矩阵以及视图矩阵
         // 所以我们必须要调用基类方法，用于控制摄像机更新
-        // 否则你将什么都看不到，切记！
+        // 否则你将什么都看不到，切记!
         super.update(elapsedMsec, intervalSec);
     }
 
+    /** @override */
     render(): void {
         // 使用了 preserveDrawingBuffer: false 创建WebGLRenderingContext，因此可以不用每帧调用clear方法清屏
         // this.gl.clear( this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT );
@@ -83,11 +82,8 @@ export class CoordSystemApplication extends CameraApplication {
         this.ctx2D.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         // 遍历整个坐标系视口数组
-        for (let i: number = 0; i < this.coordSystems.length; i++) {
-            const s: CoordSystem = this.coordSystems[i];
-            // 使用当前的坐标系及视口数据作为参数，调用currentDrawMethod回调函数
-            this.currentDrawMethod(s);
-        }
+        // 使用当前的坐标系及视口数据作为参数，调用currentDrawMethod回调函数
+        this.coordSystems.forEach((s) => this.currentDrawMethod(s));
     }
 
     onKeyPress(evt: CanvasKeyBoardEvent): void {
@@ -172,7 +168,7 @@ export class CoordSystemApplication extends CameraApplication {
         // 1、绘制三轴坐标系
         this.matStack.pushMatrix();
         {
-            this.matStack.translate(s.pos); // 将坐标系平移到s.pos位置
+            this.matStack.translate(s.position); // 将坐标系平移到s.pos位置
             this.matStack.rotate(s.angle, s.axis, false); // 绕着s.axis轴旋转s.angle度
             mat4.product(
                 this.camera.viewProjectionMatrix,
@@ -211,7 +207,7 @@ export class CoordSystemApplication extends CameraApplication {
         // 1、绘制六轴坐标系
         this.matStack.pushMatrix(); // 矩阵进栈
         {
-            this.matStack.translate(s.pos); // 将坐标系平移到s.pos位置
+            this.matStack.translate(s.position); // 将坐标系平移到s.pos位置
             this.matStack.rotate(s.angle, s.axis, false); // 坐标系绕着s.axis轴旋转s.angle度
             // 合成model-view-project矩阵
             mat4.product(
@@ -253,7 +249,7 @@ export class CoordSystemApplication extends CameraApplication {
         this.matStack.pushMatrix();
         {
             // 第一步：绘制旋转的坐标系
-            this.matStack.translate(s.pos); // 平移到当前坐标系的原点
+            this.matStack.translate(s.position); // 平移到当前坐标系的原点
             this.matStack.rotate(s.angle, s.axis, false); // 绕着当前坐标系的轴旋转angle度
             // 合成坐标系的model-view-project矩阵
             mat4.product(

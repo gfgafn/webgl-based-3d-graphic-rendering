@@ -101,6 +101,18 @@ export class GeometryData {
 }
 
 export class Cube {
+    /**
+     * ```plaintext
+     *    /3--------/7
+     *   / |       / |
+     *  /  |      /  |
+     * 1---|-----5   |
+     * |  /2- - -|- -6
+     * | /       |  /
+     * |/        | /
+     * 0---------4/
+     * ```
+     */
     constructor(
         public halfWidth: number = 0.2,
         public halfHeight: number = 0.2,
@@ -110,18 +122,6 @@ export class Cube {
         this.halfHeight = halfHeight;
         this.halfDepth = halfDepth;
     }
-
-    /*
-            /3--------/7  |
-            / |       /   |
-            /  |      /   |
-            1---------5   |
-            |  /2- - -|- -6
-            | /       |  /
-            |/        | /
-            0---------4/
-
-    */
 
     makeGeometryDataWithTextureCooord(): GeometryData {
         const data: GeometryData = new GeometryData();

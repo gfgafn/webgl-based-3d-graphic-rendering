@@ -4,6 +4,21 @@
 
 **非原版随书代码**，个人对项目结构和局部代码进行了一定程度的更改，[主要修改](#主要修改)在此。
 
+你可以点击下方出版社给出的链接下载此书的配套资源，包括原版源代码与视频
+>[TypeScript图形渲染实战：基于WebGL的3D架构与实现_源代码+视频.rar](http://www.hzcourse.com/oep/image/ueditor/jsp/upload/file/20191209/64266-TypeScript图形渲染实战：基于WebGL的3D架构与实现_源代码+视频.rar
+)
+
+目前可以以预期方式显示与运行的Demo如下，第8章及以后章节由于缺少相关游戏程序资源，无法确认运行效果
+
+- 第3章: `RotatingCubeApplication` ✅
+- 第3章: `AsyncLoadTestApplication` ✅
+- 第4章: `BasicWebGLApplication` ✅
+- 第7章: `MeshBuilderApplication` 场景1 ✅ 场景2 ❌
+- 第7章: `CoordSystemApplication` ❌
+- 第8章: `Q3BspApplication` ❓
+- 第9章: `Doom3Application` ❓
+- 第10章: `MD5SkinedMeshApplication` ❓
+
 ## 依赖安装
 
 首先需要安装[`pnpm`](https://pnpm.io/)
@@ -54,7 +69,7 @@ pnpm run build:prod
     this.gl.uniform2fv(loc, vec2.values);
 
     // 现在
-        this.gl.uniform2fv(loc, vec2.xy);
+    this.gl.uniform2fv(loc, vec2.xy);
     ```
 
   - `vec3`相关

@@ -1,13 +1,14 @@
 import { vec3 } from '@tlaukkan/tsm';
 import { vec3Adapter } from '../common/math/tsmAdapter';
 
-/** 类支持多视口的绘制 */
+/** `GLCoordSystem` 类用来描述和显示WebGL的坐标系结构，支持多视口的绘制 */
 export class GLCoordSystem {
+    // 此处更改参见 https://www.typescriptlang.org/docs/handbook/2/classes.html#parameter-properties
     constructor(
         /** 当前坐标系被绘制在哪个视口中 */
-        public viewport: number[],
+        public viewport: number[] = [],
         /** 当前坐标系的位置，如果是多视口渲染的话，就为 `[0,0,0]` */
-        public pos: vec3 = vec3Adapter.v0,
+        public position: vec3 = vec3Adapter.v0,
         /** 当前坐标系绕哪个轴旋转 */
         public axis: vec3 = vec3.up,
         /** 当前坐标系的旋转角度（不是弧度） */
@@ -16,14 +17,7 @@ export class GLCoordSystem {
         public isDrawAxis: boolean = false,
         /** 是否绘制为 `Direct3D` 左手系 */
         public isD3D: boolean = false,
-    ) {
-        this.viewport = viewport;
-        this.angle = angle;
-        this.axis = axis;
-        this.pos = pos;
-        this.isDrawAxis = isDrawAxis;
-        this.isD3D = isD3D;
-    }
+    ) {}
 
     static makeViewportCoordSystems(
         width: number,

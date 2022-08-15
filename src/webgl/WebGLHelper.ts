@@ -27,13 +27,17 @@ export enum EGLSLESDataType {
     INT = 0x1404,
 }
 
-// 使用GLAttrribInfo代替WebGLActiveInfo对象
-// 但是GLAttribInfo中的size和type值来自于WebGLActiveInfo对象
+/**
+ * 使用`GLAttrribInfo`代替`WebGLActiveInfo`对象。
+ * 但是`GLAttribInfo`中的`size`和`type`值来自于`WebGLActiveInfo`对象
+ * @property {number} size 指`type`的个数
+ * @property {EGLSLESDataType} type 是`Uniform Type`，而不是`DataType`
+ */
 export class GLAttribInfo {
+    /** size 是指type的个数，切记 */
     size: number;
-    // size 是指type的个数，切记
+    /** type 是Uniform Type，而不是DataType */
     type: EGLSLESDataType;
-    // type 是Uniform Type，而不是DataType
     location: number;
     constructor(size: number, type: number, loc: number) {
         this.size = size;
@@ -42,12 +46,17 @@ export class GLAttribInfo {
     }
 }
 
-// 使用GLUniformInfo 代替WebGLActiveInfo对象
-// 但是GLUniformInfo 中的size和type值来自于WebGLActiveInfo对象
+/**
+ * 使用`GLUniformInfo` 代替`WebGLActiveInfo`对象
+ * 但是`GLUniformInfo` 中的`size`和`type`值来自于`WebGLActiveInfo`对象
+ * @property {number} size 指`type`的个数
+ * @property {EGLSLESDataType} type 是`Uniform Type`，而不是`DataType`
+ */
 export class GLUniformInfo {
+    /** size 是指type的个数，切记 */
     size: number;
-    // size 是指type的个数，切记
-    type: EGLSLESDataType; // type 是Uniform Type，而不是DataType
+    /** type 是Uniform Type，而不是DataType */
+    type: EGLSLESDataType;
     location: WebGLUniformLocation;
     constructor(size: number, type: number, loc: WebGLUniformLocation) {
         this.size = size;
@@ -84,7 +93,7 @@ export class GLHelper {
 
     /** 模拟触发 `WebGLRenderingContext` 上下文渲染对象丢失 */
     static triggerContextLostEvent(gl: WebGLRenderingContext): void {
-        const ret: WEBGL_lose_context | null = gl.getExtension('WEBGL_lose    _context');
+        const ret: WEBGL_lose_context | null = gl.getExtension('WEBGL_lose_context');
         if (ret) ret.loseContext();
     }
 
@@ -164,7 +173,8 @@ export class GLHelper {
             return false;
         }
         // 5．使用validateProgram进行链接验证
-        gl.validateProgram(program); // 6．使用带gl.VALIDATE_STATUS参数的getProgramParameter方法，进行验证状态检查
+        gl.validateProgram(program);
+        // 6．使用带gl.VALIDATE_STATUS参数的getProgramParameter方法，进行验证状态检查
         if (gl.getProgramParameter(program, gl.VALIDATE_STATUS) === false) {
             // 6.1 如果验证出错，调用getProgramInfoLog方法将错误信息以弹框方式通知调用者
             alert(gl.getProgramInfoLog(program));
@@ -182,6 +192,7 @@ export class GLHelper {
         return true;
     }
 
+    /** 获取当前active状态的`attribute`的数量 */
     static getProgramActiveAttribs(
         gl: WebGLRenderingContext,
         program: WebGLProgram,
@@ -209,6 +220,7 @@ export class GLHelper {
         }
     }
 
+    /** 获取当前active状态的`uniform`的数量 */
     static getProgramAtciveUniforms(
         gl: WebGLRenderingContext,
         program: WebGLProgram,

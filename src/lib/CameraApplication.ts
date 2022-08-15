@@ -15,7 +15,11 @@ export class CameraApplication extends WebGLApplication {
         this.camera = new Camera(this.gl, canvas.width, canvas.height, 45, 1, 2000);
     }
 
-    //子类override update函数时必须要调用基类本方法
+    /**
+     * 子类override `update`函数时必须要调用基类本方法。
+     * 如果`CameraApplication`的子类覆写（override）本函数
+     * 那么必须在函数的最后一句代码调用： `super.update(elapsedMsec, intervalSec)`
+     */
     update(elapsedMsec: number, intervalSec: number): void {
         // 调用Camera对象的update，这样就能实时地计算camera的投影和视图矩阵
         // 这样才能保证摄像机正确运行

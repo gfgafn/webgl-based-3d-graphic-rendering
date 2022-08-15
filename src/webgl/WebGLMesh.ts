@@ -17,10 +17,13 @@ export enum EVertexLayout {
 /** 这些类是顶点缓冲区和索引缓冲区的拥有者，表示要绘制的几何图形。整个GLMesh系统由三个类组成。 */
 
 /**
- * `GLMeshBase` 是抽象基类，内部封装了 `WebGLVertexArrayObjectOES` 对象，
- * 使用该对象能够大幅度减少 `gl.vertexAttribPointer` 和 `gl.enableVertexAttribArray` 方法的调用
+ * `GLMesh` 网格是渲染数据源，其中，`GLMeshBase` 是一个抽象基类，内部使用
+ *  `OES_vertex_array_object`（即`WebGLVerextArrayObjectOES`对象，缩写为`VAO`）
+ * 来管理顶点缓存和索引缓存，并提供了一些通用的操作
+ *
+ * `GLMeshBase` 内部封装了 `WebGLVertexArrayObjectOES` 对象，
+ * 使用该对象能够大幅度减少 `gl.vertexAttribPointer` 和 `gl.enableVertexAttribArray` 方法的调用。
  * 如果不使用 `VAO` 对象，每次绘制某个对象时都需要使用这两个方法来绑定渲染数据）。
- * `VAO` 是 `WebGLVertexArrayObjectOES` 对象的缩写，该对象属于 `WebGL` 的扩展对象。
  */
 export abstract class GLMeshBase {
     /** WebGL渲染上下文 */
@@ -32,12 +35,10 @@ export abstract class GLMeshBase {
     /** 当前使用的顶点属性的 `stride` 字节数 */
     protected _attribStride: number;
     /** 我们使用 `VAO` （顶点数组对象）来管理 `VBO` 和 `EBO` */
-    // TODO: 重命名为 vaoExt
-    /** `WebGL` 扩展对象 */
-    protected _vao: OES_vertex_array_object;
-    // TODO: 重命名为 vao
-    /** `WebGLVertexArrayObject` 对象 */
-    protected _vaoTarget: WebGLVertexArrayObjectOES;
+    /** `WebGL` 扩展对象，提供了顶点数组对象 (VAOs) 可以用来封装顶点数组的状态。 */
+    protected _vaoExtension: OES_vertex_array_object;
+    /** `WebGLVertexArrayObject` 对象，顶点数组对象 (VAOs) 指向顶点数组数据，并提供不同顶点数据集合的名称。 */
+    protected _vao: WebGLVertexArrayObjectOES;
 
     constructor(
         gl: WebGLRenderingContext,
@@ -47,16 +48,16 @@ export abstract class GLMeshBase {
         this.gl = gl;
         // 获取VAO的步骤
         // 1．使用gl.getExtension( "OES_vertex_array_object" )方式获取 VAO 扩展
-        const vao: OES_vertex_array_object | null = this.gl.getExtension(
+        const vaoExtension: OES_vertex_array_object | null = this.gl.getExtension(
             'OES_vertex_array_object',
         );
-        if (!vao) throw new Error('Not Support OES_vertex_array_object');
-        this._vao = vao;
+        if (!vaoExtension) throw new Error('Not Support OES_vertex_array_object');
+        this._vaoExtension = vaoExtension;
         // 2．调用createVertexArrayOES获取 `WebGLVertexArrayObject` 对象
-        const vaoTarget: WebGLVertexArrayObjectOES | null =
-            this._vao.createVertexArrayOES();
-        if (!vaoTarget) throw new Error('Not Support WebGLVertexArrayObjectOES');
-        this._vaoTarget = vaoTarget;
+        const vao: WebGLVertexArrayObjectOES | null =
+            this._vaoExtension.createVertexArrayOES();
+        if (!vao) throw new Error('Not Support WebGLVertexArrayObjectOES');
+        this._vao = vao;
         // 顶点属性格式，和绘制当前网格时使用的GLProgram具有一致的attribBits
         this._attribState = attribState;
         // 调用GLAttribState的getVertexByteStride方法，根据attribBits计算出顶点的stride字节数
@@ -68,12 +69,12 @@ export abstract class GLMeshBase {
     /** 绑定 `VAO` 对象 */
     bind(): void {
         // 将传递的 WebGLVertexArrayObject 对象绑定到缓冲区。
-        this._vao.bindVertexArrayOES(this._vaoTarget);
+        this._vaoExtension.bindVertexArrayOES(this._vao);
     }
 
     /** 解绑 `VAO` */
     unbind(): void {
-        this._vao.bindVertexArrayOES(null);
+        this._vaoExtension.bindVertexArrayOES(null);
     }
 
     get vertexStride(): number {
@@ -81,31 +82,36 @@ export abstract class GLMeshBase {
     }
 }
 
-/** `GLStaticMesh` 类继承自 `GLMeshBase` ，并且持有两个 `WebGLBuffer` 对象，分别表示顶点缓冲区和索引缓冲区。
+/**
+ * `GLStaticMesh` 类继承自 `GLMeshBase` ，并且持有两个 `WebGLBuffer` 对象，分别表示顶点缓冲区和索引缓冲区。
+ * `GLStatciMesh` 用于静态场景对象的数据存储和绘制。
  * 其中，索引缓冲区可以设置为 `null` ，表示不使用索引缓冲区，在这种情况下，
  * 将会自动调用 `gl.rawArrays` 方法提交渲染数据，否则就会调用 `gl.drawElements` 方法绘制网格对象。
- * `GLStaticMesh` 类使用的是交错数组方式存储顶点属性相关的数据。
+ * `GLStaticMesh` 类使用的是**交错数组方式**存储顶点属性相关的数据。
  */
 export class GLStaticMesh extends GLMeshBase {
     //GLStaticMesh内置了一个顶点缓冲区
     /** 顶点缓冲区 */
     protected _vbo: WebGLBuffer;
-    protected _vertCount: number = 0; // 顶点的数量
+    /** 顶点的数量 */
+    protected _vertCount: number = 0;
     // GLStaticMesh内置了一个可选的索引缓冲区
     /** 索引缓冲区 */
     protected _ibo: WebGLBuffer | null = null;
-    protected _indexCount: number = 0; // 索引的数量
+    /** 索引的数量 */
+    protected _indexCount: number = 0;
 
     mins: vec3 = new vec3([Infinity, Infinity, Infinity]);
     maxs: vec3 = new vec3([-Infinity, -Infinity, -Infinity]);
 
     /**
-     * `GLStaticMesh` 构造函数
+     * `GLStaticMesh` 构造函数，`GLStatciMesh` 用于静态场景对象的数据存储和绘制。
+     * `GLStaticMesh` 类使用的是交错数组方式存储顶点属性相关的数据。
      * @param gl WebGL渲染上下文
      * @param attribState
-     * @param vbo
+     * @param vbo Vertex Buffer Object
      * @param ibo Index Buffer Object
-     * @param drawMode
+     * @param drawMode 图元绘制模式
      */
     constructor(
         gl: WebGLRenderingContext,
@@ -116,7 +122,6 @@ export class GLStaticMesh extends GLMeshBase {
     ) {
         // 调用基类的构造函数
         super(gl, attribState, drawMode);
-
         // 关键的操作：
         // 要使用VAO来管理VBO和EBO的话，必须要在VBO和EBO创建绑定之前先绑定VAO对象，这个顺序不能搞错!!!
         // 先绑定VAO后，那么后续创建的VBO和EBO对象都归属VAO管辖!!!
@@ -124,7 +129,6 @@ export class GLStaticMesh extends GLMeshBase {
         // 在创建并绑定vbo
         const vb: WebGLBuffer | null = gl.createBuffer();
         if (!vb) throw new Error('vbo creation fail');
-
         this._vbo = vb;
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this._vbo); // 绑定VBO
         this.gl.bufferData(this.gl.ARRAY_BUFFER, vbo, this.gl.STATIC_DRAW); // 将顶点数据载入到VBO中
@@ -146,6 +150,10 @@ export class GLStaticMesh extends GLMeshBase {
         this.maxs = new vec3();
     }
 
+    /**
+     * 创建`IBO`
+     * @param ibo `IBO`表示 `Index Buffer Object`
+     */
     protected setIBO(ibo: Uint16Array | null): void {
         if (!ibo) return; // 按需创建IBO
         // 创建IBO
@@ -157,6 +165,7 @@ export class GLStaticMesh extends GLMeshBase {
         this._indexCount = ibo.length;
     }
 
+    /** 调用 `WebGLRenderingContext.drawElements()` 方法或 `WebGLRenderingContext.drawArrays()` 渲染图元 */
     draw(): void {
         this.bind(); // 绘制前先要绑定VAO
         if (this._ibo) {
@@ -173,17 +182,19 @@ export class GLStaticMesh extends GLMeshBase {
         }
         this.unbind(); // 绘制好后解除VAO绑定
     }
-    // 很重要的几点说明
-    // drawElements中的offset是以字节为单位
-    // 而count是以索引个数为单位
-    // drawRange绘制从offset偏移的字节数开始，绘制count个索引
-    // drawRange内部并没有调用bind和unbind方法，因此要调用drawRange方法的话，必须采用如下方式
-    /*
-        mesh.bind();           // 绑定VAO
-        mesh.drawRange(2, 5); // 调用drawRange方法
-        mesh.unbind();         // 解绑VAO
-    */
 
+    /**
+     * 很重要的几点说明:
+     * `gl.drawElements()`中的`offset`是以**字节**为单位。
+     * 而`count`是以**索引个数**为单位。
+     * `drawRange` 绘制从`offset`偏移的字节数开始，绘制`count`个索引。
+     * `drawRange`内部并没有调用`bind`和`unbind`方法，因此要调用`drawRange`方法的话，必须采用如下方式：
+     * ```JavaScript
+     * mesh.bind();          // 绑定VAO
+     * mesh.drawRange(2, 5); // 调用drawRange方法
+     * mesh.unbind();        // 解绑VAO
+     * ```
+     */
     drawRange(offset: number, count: number): void {
         if (this._ibo) {
             this.gl.drawElements(this.drawMode, count, this.gl.UNSIGNED_SHORT, offset);
@@ -193,15 +204,87 @@ export class GLStaticMesh extends GLMeshBase {
     }
 }
 
-/** GLMeshBuilder类用来每帧动态生成网格几何体并进行绘制显示。 */
+export class GLIndexedStaticMesh extends GLStaticMesh {
+    private _indices: TypedArrayList<Uint16Array>;
+
+    public constructor(
+        gl: WebGLRenderingContext,
+        attribState: GLAttribBits,
+        vbo: Float32Array | ArrayBuffer,
+        drawMode: number = gl.TRIANGLES,
+    ) {
+        super(gl, attribState, vbo, null, drawMode);
+        this._indices = new TypedArrayList<Uint16Array>(Uint16Array, 90);
+    }
+
+    public addIndex(idx: number): GLIndexedStaticMesh {
+        this._indices.push(idx);
+        this._indexCount = this._indices.length;
+        return this;
+    }
+
+    public clearIndices(): GLIndexedStaticMesh {
+        this._indices.clear();
+        this._indexCount = 0;
+        return this;
+    }
+
+    protected setIBO(ibo: Uint16Array | null): void {
+        this._ibo = this.gl.createBuffer();
+        if (this._ibo === null) {
+            throw new Error('IBO creation fail');
+        }
+        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this._ibo);
+    }
+
+    public draw(): void {
+        this.bind();
+        if (this._ibo !== null) {
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this._ibo);
+            this.gl.bufferData(
+                this.gl.ELEMENT_ARRAY_BUFFER,
+                this._indices.subArray(),
+                this._indexCount,
+            );
+            this.gl.drawElements(
+                this.drawMode,
+                this._indexCount,
+                this.gl.UNSIGNED_SHORT,
+                0,
+            );
+        } else {
+            this.gl.drawArrays(this.drawMode, 0, this._vertCount);
+        }
+        this.unbind();
+    }
+
+    /**
+     * 很重要的一点：`drawElements中`的`offset`是以**字节**为单位，而`count`是以**索引个数**为单位
+     * 所以偏移的寻址方式是 : `offset`。`count`的字节数:`sizeof (gl.UNSIGNED_SHORT) * count`
+     */
+    public drawRange(offset: number, count: number): void {
+        if (this._ibo !== null) {
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this._ibo);
+            this.gl.bufferData(
+                this.gl.ELEMENT_ARRAY_BUFFER,
+                this._indices.subArray(),
+                this._indexCount,
+            );
+            this.gl.drawElements(this.drawMode, count, this.gl.UNSIGNED_SHORT, offset);
+        } else {
+            this.gl.drawArrays(this.drawMode, offset, count);
+        }
+    }
+}
+
+/** `GLMeshBuilder` 则实现了类似于`OpenGL1.x`中的立即渲染模式（`glBegin` /`glVertex` /`glEnd`这种操作模式），用于**动态更新渲染数据及显示绘制** */
 export class GLMeshBuilder extends GLMeshBase {
     // 字符串常量key
-    private static SEQUENCED: string = 'SEQUENCED';
-    private static INTERLEAVED: string = 'INTERLEAVED';
+    private static SEQUENCED: 'SEQUENCED' = 'SEQUENCED' as const;
+    private static INTERLEAVED: 'INTERLEAVED' = 'INTERLEAVED' as const;
     /** 顶点在内存或显存中的布局方式 */
     private _layout: EVertexLayout;
     // 为了简单起见，只支持顶点的位置坐标、纹理0坐标、颜色和法线这4种顶点属性格式
-    // 表示当前正在输入的顶点属性值
     /** 当前正在输入的顶点颜色属性 */
     private _color: vec4 = new vec4([0, 0, 0, 0]);
     /** 当前正在输入的顶点纹理0坐标属性 */
@@ -214,18 +297,19 @@ export class GLMeshBuilder extends GLMeshBase {
     private _hasNormal: boolean;
     /** 渲染的数据源 */
     private _lists: { [key: string]: TypedArrayList<Float32Array> } = {};
-    /** 渲染用的VBO */
+    /** 渲染用的`VBO` */
     private _buffers: { [key: string]: WebGLBuffer } = {};
     /** 要渲染的顶点数量  */
     private _vertCount: number = 0;
-    /** 当前使用的GLProgram对象 */
+    /** 当前使用的`GLProgram`对象 */
     program: GLProgram;
-    /** 如果使用了纹理坐标，那么需要设置当前使用的纹理对象，否则将texture变量设置为null */
+    /** 如果使用了纹理坐标，那么需要设置当前使用的纹理对象，否则将`texture`变量设置为`null` */
     texture: WebGLTexture | null;
 
     private _ibo: WebGLBuffer | null = null;
     private _indexCount: number = -1;
 
+    /** `GLMeshBuilder` 则实现了类似于`OpenGL1.x`中的立即渲染模式（`glBegin` /`glVertex` /`glEnd`这种操作模式），用于**动态更新渲染数据及显示绘制** */
     constructor(
         gl: WebGLRenderingContext,
         state: GLAttribBits,
@@ -253,9 +337,10 @@ export class GLMeshBuilder extends GLMeshBase {
         this.bind();
 
         // 生成索引缓存
-        let buffer: WebGLBuffer | null = this.gl.createBuffer();
+        /** 索引缓存 */
+        let indexBuffer: WebGLBuffer | null = this.gl.createBuffer();
         // buffer = this.gl.createBuffer();
-        if (!buffer) throw new Error('WebGLBuffer创建不成功!');
+        if (!indexBuffer) throw new Error('WebGLBuffer创建不成功!');
 
         if (this._layout === EVertexLayout.INTERLEAVED) {
             // interleaved的话：
@@ -264,12 +349,12 @@ export class GLMeshBuilder extends GLMeshBase {
             this._lists[GLMeshBuilder.INTERLEAVED] = new TypedArrayList<Float32Array>(
                 Float32Array,
             );
-            this._buffers[GLMeshBuilder.INTERLEAVED] = buffer;
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-            const map: GLAttribOffsetMap =
+            this._buffers[GLMeshBuilder.INTERLEAVED] = indexBuffer;
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, indexBuffer);
+            const offsetMap: GLAttribOffsetMap =
                 GLAttribState.getInterleavedLayoutAttribOffsetMap(this._attribState);
             // 调用如下两个方法
-            GLAttribState.setAttribVertexArrayPointer(this.gl, map);
+            GLAttribState.setAttribVertexArrayPointer(this.gl, offsetMap);
             GLAttribState.setAttribVertexArrayState(this.gl, this._attribState);
         } else if (this._layout === EVertexLayout.SEQUENCED) {
             // sequenced的话：
@@ -294,10 +379,10 @@ export class GLMeshBuilder extends GLMeshBase {
                     Float32Array,
                 );
             }
-            buffer = this.gl.createBuffer();
-            if (!buffer) throw new Error('WebGLBuffer创建不成功!');
-            this._buffers[GLMeshBuilder.SEQUENCED] = buffer;
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+            indexBuffer = this.gl.createBuffer();
+            if (!indexBuffer) throw new Error('WebGLBuffer创建不成功!');
+            this._buffers[GLMeshBuilder.SEQUENCED] = indexBuffer;
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, indexBuffer);
             // sequenced没法预先设置指针，因为是动态的
             // 但是可以预先设置顶点属性状态
             GLAttribState.setAttribVertexArrayState(this.gl, this._attribState);
@@ -312,8 +397,8 @@ export class GLMeshBuilder extends GLMeshBase {
             this._lists[GLAttribState.POSITION_NAME] = new TypedArrayList<Float32Array>(
                 Float32Array,
             );
-            this._buffers[GLAttribState.POSITION_NAME] = buffer;
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+            this._buffers[GLAttribState.POSITION_NAME] = indexBuffer;
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, indexBuffer);
             this.gl.vertexAttribPointer(
                 GLAttribState.POSITION_LOCATION,
                 3,
@@ -327,10 +412,10 @@ export class GLMeshBuilder extends GLMeshBase {
                 this._lists[GLAttribState.COLOR_NAME] = new TypedArrayList<Float32Array>(
                     Float32Array,
                 );
-                buffer = this.gl.createBuffer();
-                if (!buffer) throw new Error('WebGLBuffer创建不成功!');
-                this._buffers[GLAttribState.COLOR_NAME] = buffer;
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+                indexBuffer = this.gl.createBuffer();
+                if (!indexBuffer) throw new Error('WebGLBuffer创建不成功!');
+                this._buffers[GLAttribState.COLOR_NAME] = indexBuffer;
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, indexBuffer);
                 this.gl.vertexAttribPointer(
                     GLAttribState.COLOR_LOCATION,
                     4,
@@ -344,8 +429,8 @@ export class GLMeshBuilder extends GLMeshBase {
             if (this._hasTexcoord) {
                 this._lists[GLAttribState.TEXCOORD_NAME] =
                     new TypedArrayList<Float32Array>(Float32Array);
-                this._buffers[GLAttribState.TEXCOORD_NAME] = buffer;
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+                this._buffers[GLAttribState.TEXCOORD_NAME] = indexBuffer;
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, indexBuffer);
                 this.gl.vertexAttribPointer(
                     GLAttribState.TEXCOORD_BIT,
                     2,
@@ -360,10 +445,10 @@ export class GLMeshBuilder extends GLMeshBase {
                 this._lists[GLAttribState.NORMAL_NAME] = new TypedArrayList<Float32Array>(
                     Float32Array,
                 );
-                buffer = this.gl.createBuffer();
-                if (!buffer) throw new Error('WebGLBuffer创建不成功!');
-                this._buffers[GLAttribState.NORMAL_NAME] = buffer;
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+                indexBuffer = this.gl.createBuffer();
+                if (!indexBuffer) throw new Error('WebGLBuffer创建不成功!');
+                this._buffers[GLAttribState.NORMAL_NAME] = indexBuffer;
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, indexBuffer);
                 this.gl.vertexAttribPointer(
                     GLAttribState.NORMAL_LOCATION,
                     3,
@@ -428,7 +513,7 @@ export class GLMeshBuilder extends GLMeshBase {
         return this;
     }
 
-    /** `vertex` 必须要最后调用，输入xyz，返回 `this` */
+    /** `vertex` 必须要最后调用，输入`xyz`，返回 `this` */
     vertex(x: number, y: number, z: number): GLMeshBuilder {
         if (this._layout === EVertexLayout.INTERLEAVED) {
             // 针对interleaved存储方式的操作
@@ -440,7 +525,6 @@ export class GLMeshBuilder extends GLMeshBase {
             list.push(z);
             // texcoord
             if (this._hasTexcoord) {
-                //TODO: [this._texCoord.x, this._texCoord.y].forEach((v) => list.push(v));
                 list.push(this._texCoord.x);
                 list.push(this._texCoord.y);
             }
