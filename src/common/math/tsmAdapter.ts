@@ -22,5 +22,5 @@ export class mat4Adapter {
 }
 
 export class tsmAdapter {
-    static EPSILON = epsilon;
+    static EPSILON: typeof epsilon = epsilon;
 }
