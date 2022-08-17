@@ -132,7 +132,6 @@ export class TreeNode<T> {
             }
             //第三种情况: 要添加的节点不是当前节点的祖先并且也没有父亲(新节点或已从父亲移除)
             //设置父亲并添加到_children中去
-            // eslint-disable-next-line @typescript-eslint/no-this-alias
             child._parent = this;
             this._children.splice(index, 0, child);
             return child;
@@ -508,8 +507,7 @@ export class TreeNode<T> {
 
     public get mostRight(): TreeNode<T> | undefined {
         let node: TreeNode<T> | undefined = this;
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
+        for (;;) {
             let subNode: TreeNode<T> | undefined = undefined;
             if (node !== undefined) {
                 // 调用lastChild只读属性
@@ -525,8 +523,7 @@ export class TreeNode<T> {
 
     public get mostLeft(): TreeNode<T> | undefined {
         let node: TreeNode<T> | undefined = this;
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
+        for (;;) {
             let subNode: TreeNode<T> | undefined = undefined;
             if (node !== undefined) {
                 // 调用firstChild只读属性

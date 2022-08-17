@@ -34,16 +34,13 @@ export enum EGLSLESDataType {
  * @property {EGLSLESDataType} type 是`Uniform Type`，而不是`DataType`
  */
 export class GLAttribInfo {
-    /** size 是指type的个数，切记 */
-    size: number;
-    /** type 是Uniform Type，而不是DataType */
-    type: EGLSLESDataType;
-    location: number;
-    constructor(size: number, type: number, loc: number) {
-        this.size = size;
-        this.type = type;
-        this.location = loc;
-    }
+    constructor(
+        /** size 是指type的个数，切记 */
+        public size: number,
+        /** type 是Uniform Type，而不是DataType */
+        public type: number,
+        public location: number,
+    ) {}
 }
 
 /**
@@ -53,16 +50,13 @@ export class GLAttribInfo {
  * @property {EGLSLESDataType} type 是`Uniform Type`，而不是`DataType`
  */
 export class GLUniformInfo {
-    /** size 是指type的个数，切记 */
-    size: number;
-    /** type 是Uniform Type，而不是DataType */
-    type: EGLSLESDataType;
-    location: WebGLUniformLocation;
-    constructor(size: number, type: number, loc: WebGLUniformLocation) {
-        this.size = size;
-        this.type = type;
-        this.location = loc;
-    }
+    constructor(
+        /** size 是指type的个数，切记 */
+        public size: number,
+        /** type 是Uniform Type，而不是DataType */
+        public type: number,
+        public location: WebGLUniformLocation,
+    ) {}
 }
 
 export type GLUniformMap = { [key: string]: GLUniformInfo };
@@ -138,6 +132,7 @@ export class GLHelper {
         // 编译成功返回true
         return true;
     }
+
     /** 创建链接器程序 */
     static createProgram(gl: WebGLRenderingContext): WebGLProgram {
         const program: WebGLProgram | null = gl.createProgram();

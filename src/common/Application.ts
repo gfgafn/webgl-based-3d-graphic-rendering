@@ -34,27 +34,17 @@ export enum EInputEventType {
  * @property {EInputEventType} type 当前事件的类型
  */
 export class CanvasInputEvent {
-    /** 指示 `alt` 键是否被按下 */
-    altKey: boolean;
-    /** 指示 `ctrl` 键是否被按下 */
-    ctrlKey: boolean;
-    /** 指示 `shift` 键是否被按下 */
-    shiftKey: boolean;
-    /** 当前事件的类型 */
-    type: EInputEventType;
-
     /** 构造函数，初始化时3个组合键都默认是 `false` 状态 */
     constructor(
-        altKey: boolean = false,
-        ctrlKey: boolean = false,
-        shiftKey: boolean = false,
-        type: EInputEventType = EInputEventType.MOUSEEVENT,
-    ) {
-        this.altKey = altKey;
-        this.ctrlKey = ctrlKey;
-        this.shiftKey = shiftKey;
-        this.type = type;
-    }
+        /** 指示 `alt` 键是否被按下 */
+        public altKey: boolean = false,
+        /** 指示 `ctrl` 键是否被按下 */
+        public ctrlKey: boolean = false,
+        /** 指示 `shift` 键是否被按下 */
+        public shiftKey: boolean = false,
+        /** 当前事件的类型 */
+        public type: EInputEventType = EInputEventType.MOUSEEVENT,
+    ) {}
 }
 
 /**
@@ -64,22 +54,17 @@ export class CanvasInputEvent {
  * @property {vec2} canvasPosition 基于canvas坐标系的表示
  */
 export class CanvasMouseEvent extends CanvasInputEvent {
-    /** 表示当前按下鼠标哪个键, [ `0` ：鼠标左键，`1` ：鼠标中键，`2` ：鼠标右键] */
-    button: number;
-    /** 基于canvas坐标系的表示 */
-    canvasPosition: vec2;
-
     constructor(
         type: EInputEventType,
-        canvasPos: vec2,
-        button: number,
+        /** 基于canvas坐标系的表示 */
+        public canvasPosition: vec2,
+        /** 表示当前按下鼠标哪个键, [ `0` ：鼠标左键，`1` ：鼠标中键，`2` ：鼠标右键] */
+        public button: number,
         altKey: boolean = false,
         ctrlKey: boolean = false,
         shiftKey: boolean = false,
     ) {
         super(altKey, ctrlKey, shiftKey, type);
-        this.canvasPosition = canvasPos;
-        this.button = button;
         console.log(`鼠标键 button ${this.button}`);
     }
 }
@@ -89,26 +74,19 @@ export class CanvasMouseEvent extends CanvasInputEvent {
  * @extends CanvasInputEvent
  */
 export class CanvasKeyBoardEvent extends CanvasInputEvent {
-    /** 当前按下的键的 `ascii字符` */
-    key: string;
-    /** 当前按下的键的 `ascii码(数字)` */
-    keyCode: number;
-    /** 当前按下的键是否不停的触发事件 */
-    repeat: boolean;
-
     constructor(
         type: EInputEventType,
-        key: string,
-        keyCode: number,
-        repeat: boolean,
+        /** 当前按下的键的 `ascii字符` */
+        public key: string,
+        /** 当前按下的键的 `ascii码(数字)` */
+        public keyCode: number,
+        /** 当前按下的键是否不停的触发事件 */
+        public repeat: boolean,
         altKey: boolean = false,
         ctrlKey: boolean = false,
         shiftKey: boolean = false,
     ) {
         super(altKey, ctrlKey, shiftKey, type);
-        this.key = key;
-        this.keyCode = keyCode;
-        this.repeat = repeat;
     }
 }
 
@@ -130,8 +108,6 @@ class Timer {
     id: number = -1;
     /** 标记当前定时器是否有效 */
     enabled: boolean = false;
-    /** 回调函数，到时间会自动调用 */
-    callback: TimerCallback;
     /** 用作回调函数的参数 */
     callbackData: unknown = undefined;
     /** 倒计时定时器，每次 `update` 时会倒计时 */
@@ -145,9 +121,7 @@ class Timer {
      * 定时器类构造函数
      * @param {TimerCallback} callback 回调函数，到时间会自动调用
      */
-    constructor(callback: TimerCallback) {
-        this.callback = callback;
-    }
+    constructor(public callback: TimerCallback) {}
 }
 
 /** `Application`基类，主要功能为更新、重绘、事件的分发或处理 */

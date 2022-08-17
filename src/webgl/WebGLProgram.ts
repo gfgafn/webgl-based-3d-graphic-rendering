@@ -43,7 +43,8 @@ export class GLProgram {
         this._attribState = attribState;
         // 最好能从shader源码中抽取，目前暂时使用参数传递方式
         this.bindCallback = null;
-        this.unbindCallback = null; // 创建Vertex Shaders
+        this.unbindCallback = null;
+        // 创建Vertex Shaders
         let shader: WebGLShader | null = GLHelper.createShader(
             this.gl,
             EShaderType.VS_SHADER,

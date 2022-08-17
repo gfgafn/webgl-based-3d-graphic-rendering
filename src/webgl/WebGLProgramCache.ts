@@ -1,7 +1,7 @@
 import { Dictionary } from '../common/container/Dictionary';
 import { GLProgram } from './WebGLProgram';
 
-/** 缓存或管理当前 WebGL 应用中正在运行的相关GLProgram对象 */
+/** 缓存或管理当前 `WebGL` 应用中正在运行的相关`GLProgram`对象 */
 export class GLProgramCache {
     // 单例设计模式
     // 只初始化一次，使用的是 static readonly声明方式

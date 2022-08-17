@@ -24,8 +24,7 @@ export class Element<T> {
 
     public get root(): Element<T> {
         let root: Element<T> = this;
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
+        for (;;) {
             const n: Element<T> | null = root._parent;
             if (n === null) {
                 break;
@@ -96,7 +95,6 @@ export class Element<T> {
             }
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
         child._parent = this;
         if (this._lastChild !== null) {
             child._prevSibling = this._lastChild;
