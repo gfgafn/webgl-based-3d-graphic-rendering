@@ -41,6 +41,8 @@ pnpm run build:prod
 
 ## 主要修改
 
+- 解决了原版随书源码编译报错以及无法在开发时热更新的问题
+- 引入了`eslint`, `prettier`, `.editorconfig`等代码检查以及代码格式化工具，减少代码潜在错误，统一代码风格
 - 去掉了几乎所有的`public`关键字，在`JavaScript`和`TypeScript`中所有的`Class`成员默认都是公开的
 - 对`VS Code`更友好的注释方式
 - `tsm`数学库的引入由置于项目源码中变为由`npm`引入，由于该数学库目前不支持`npm`引入，因此引入[`@tlaukkan/tsm`](https://github.com/tlaukkan/tsm)这一`fork`版本作为代替

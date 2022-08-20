@@ -334,7 +334,7 @@ export class Camera {
     }
 
     /**
-     * 从当前postition和target获得view矩阵,并且从 `view` 矩阵抽取forward、up、right方向矢量
+     * 从当前`postition`和`target`获得`view矩阵`,并且从 `view矩阵` 抽取`forward`、`up`、`right`方向矢量
      * @param target 要观察的目标，世界坐标系中的任意一个点来构建视图矩阵
      * @param up
      */
@@ -353,7 +353,14 @@ export class Camera {
         this._zAxis.z = this._viewMatrix.at(10);
     }
 
-    setViewport(x: number, y: number, width: number, height: number): void {
+    /**
+     * 调用`WebGLRenderingContext.viewport()` 方法，用来设置视口，即指定从标准设备到窗口坐标的 x、y 仿射变换
+     * @param x 用来设定视口的左下角水平坐标。默认值：`0`
+     * @param y 用来设定视口的左下角垂直坐标。默认值：`0`
+     * @param width 非负数，用来设定视口的宽度。默认值：`canvas` 的宽度
+     * @param height 非负数，用来设定视口的高度。默认值：`canvas` 的高度
+     */
+    setViewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei): void {
         this.gl.viewport(x, y, width, height);
     }
 
