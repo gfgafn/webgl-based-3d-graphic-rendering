@@ -2,7 +2,7 @@
     "compilerOptions": {
         "outDir": "./dist/",
         "sourceMap": true,
-        "module": "commonjs",
+        "module": "ESNext",
         "target": "ES2015",
         "strict": true,
         "strictNullChecks": true,
@@ -11,7 +11,8 @@
         "strictPropertyInitialization": true,
         "noImplicitAny": true,
         "alwaysStrict": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "moduleResolution": "Node"
     },
     "include": [
         "src/**/*"
