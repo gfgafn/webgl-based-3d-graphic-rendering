@@ -47,7 +47,7 @@ pnpm run build:prod
 - 对`VS Code`更友好的注释方式
 - `tsm`数学库的引入由置于项目源码中变为由`npm`引入，由于该数学库目前不支持`npm`引入，因此引入[`@tlaukkan/tsm`](https://github.com/tlaukkan/tsm)这一`fork`版本作为代替
 - `tsm`数学库API变更导致的更改，书中说使用的是[`tsm`](https://github.com/matthiasferch/tsm)这一数学库，但本人在重新构建项目的过程中发现这一书中的部分`tsm`源代码与该数学库在[`Github`](https://github.com/tlaukkan/tsm)的源码有出入，目前已经发现的如下所示
-  - 随书源码中各类的`values`字段均为`public`型，而`Github`上源码均为`private`型
+  - 随书源码中各`vec2`, `vec3`, `mat4`, `quat`等类的`values`字段均为`public`型，而`Github`上源码均为`private`型
   - 随书源码中`mat4.perspective(fov, aspect, near, far)`方法的实现与`Github`上的实现有较大差异
   - 随书源码中`mat4`实例上的`inverse`方法不会修改实例自身，但`Github`上的源码显示其会修改自身
   - `tsm`整体相关
